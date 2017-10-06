@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ICO Admin</title>
+    <title>ICO Admin Panel</title>
     <meta charset="UTF-8">
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
@@ -11,12 +11,18 @@
     <script type="text/javascript" src="js/web3.min.js"></script>
     <script type="text/javascript" src="js/truffle-contract.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
-    <link rel="stylesheet" href="/css/style.css" type='text/css'/>
+    <link rel="stylesheet" href="css/style.css" type='text/css'/>
 </head>
 
 <body>
-<h1>ICO Admin</h1>
+<h1>ICO Admin Panel</h1>
 <div class="error" id="errormsg"></div>
+<div>
+  <table>
+      <tr><td><h3>Current Time:</h3></td><td><input type="text" id="clock" name="clock" value="" readonly class="time"></td><td>(Z = UTC timezone, ISO8601 format)</td></tr>
+      <tr><td><h3>Contract State:</h3></td><td><input type="text" readonly name="contractState" value="" class="ethAddress"></td></tr>
+  </table>
+</div>
 <h2>0. Load contracts</h2>
 <form id="loadContractsForm">
     <label for="tokenABI">Token ABI:
@@ -28,39 +34,135 @@
     <input type="button" id="loadContractsBtn" value="Load contracts">
 </form>
 
-
-<h2>1. Publish Crowdsale</h2>
+<br>
+<hr>
+<h2>Contract Launch</h2>
+<h3>1. Publish Contract</h3>
 <form id="publishContractsForm">
     <table>
-        <tr><td>Current time:</td><td><input type="text" id="clock" name="clock" value="" readonly class="time"></td><td>(Z = UTC timezone, ISO8601 format)</td></tr>
-        <tr><td>Start time:</td><td><input type="text" name="startTime" value="" class="time"></td><td></td></tr>
-        <tr><td>End time:</td><td><input type="text" name="endTime" value="" class="time"></td><td></td></tr>
-        <tr><td>Rate:</td><td><input type="text" name="rate" value="" class="number"></td><td>tokens = 1 ETH</td></tr>
-        <tr><td>Owner tokens:</td><td><input type="text" name="ownersPercent" value="" class="number"></td><td>%</td></tr>
-        <tr><td>Hard Cap:</td><td><input type="text" name="hardCap" value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>Presale 1 Price per Token:</td><td><input type="text" name="preSale1BasePrice" value="" class="number"></td><td>in cents</td></tr>
+        <tr><td>Presale 1 Hard Cap:</td><td>$<input type="text" name="preSale1DollarHardCap" value="" class="number"></td><td></td></tr>
+        <tr><td>Presale 2 Price per Token:</td><td><input type="text" name="preSale2BasePrice" value="" class="number"></td><td>in cents</td></tr>
+        <tr><td>Presale 2 Hard Cap:</td><td>$<input type="text" name="preSale2DollarHardCap" value="" class="number"></td><td></td></tr>
+        <tr><td>ICO Price per Token:</td><td><input type="text" name="ICO_basePrice" value="" class="number"></td>in cents<td></td></tr>
+        <tr><td>ICO Hard Cap:</td><td>$<input type="text" name="ICO_DollarHardCap" value="" class="number"></td><td></td></tr>
+        <tr><td>Price Increase Interval:</td><td><input type="text" name="priceIncreaseInterval" value="" class="number"></td><td>in seconds</td></tr>
+        <tr><td>Price Increase:</td><td><input type="text" name="priceIncreaseAmount" value="" class="number"></td><td>in cents</td></tr>
+        <tr><td>Owner Token Reserve:</td><td><input type="text" name="ownersPercent" value="" class="number"></td><td>%</td></tr>
     </table>
     <div><input type="button" id="publishContracts" value="Publish"></div>
+    <br>
     <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
     <div><label>Crowdsale Published at: <input type="text" readonly name="publishedAddress" value="" class="ethAddress"></label></div>
     <div><label>Token Published at: <input type="text" readonly name="tokenAddress" value="" class="ethAddress"></label></div>
 </form>
 
-<h2>2. Manage Crowdsale </h2>
+<br>
+<hr>
+<h2>Presale Round 1</h2>
+<h3>2. Start Round</h3>
+<form id="publishContractsForm">
+    <table>
+<!--         <tr><td>Current time:</td><td><input type="text" id="clock" name="clock" value="" readonly class="time"></td><td>(Z = UTC timezone, ISO8601 format)</td></tr>
+ -->        <tr><td>Start time:</td><td><input type="text" name="startTimePresale1" value="" class="time"></td><td></td></tr>
+        <tr><td>End time:</td><td><input type="text" name="endTimePresale1" value="" class="time"></td><td></td></tr>
+    </table>
+    <div><input type="button" id="switchState1" value="Start"></div>
+    <br>
+    <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
+    <div><label>Crowdsale Published at: <input type="text" readonly name="publishedAddress" value="" class="ethAddress"></label></div>
+    <div><label>Token Published at: <input type="text" readonly name="tokenAddress" value="" class="ethAddress"></label></div>
+</form>
+
+<h3>3. Manage Presale Round 1 </h3>
 <form id="manageCrowdsale">
     <div><label>Crowdsale at: <input type="text" name="crowdsaleAddress" value="" class="ethAddress"></label></div>
     <div><input type="button" id="loadCrowdsaleInfo" value="Load info"></div>
     <table>
-        <tr><td>Start time:</td><td><input type="text" name="startTime" readonly value="" class="time"></td><td></td></tr>
-        <tr><td>End time:</td><td><input type="text" name="endTime" readonly value="" class="time"></td><td></td></tr>
-        <tr><td>Current Rate:</td><td><input type="text" name="rate" readonly value="" class="number"></td><td>tokens = 1 ETH</td></tr>
-        <tr><td>Total collected:</td><td><input type="text" name="collectedEther" readonly value="" class="number"></td><td>ETH</td></tr>
-        <tr><td>Hard Cap:</td><td><input type="text" name="hardCap" readonly value="" class="number"></td><td>ETH</td></tr>
-        <tr><td>Current balance:</td><td><input type="text" name="balance" readonly value="" class="number"></td><td>ETH</td></tr>
-    </table>
+        <tr><td>Start time:</td><td><input type="text" name="startTimePresale1" readonly value="" class="time"></td><td></td></tr>
+        <tr><td>End time:</td><td><input type="text" name="endTimePresale1" readonly value="" class="time"></td><td></td></tr>
+        <tr><td>Current Rate:</td><td><input type="text" name="presale1tokensPerETH" readonly value="" class="number"></td><td>tokens = 1 ETH</td></tr>
+        <tr><td>Total collected:</td><td><input type="text" name="preSale1EthCollected" readonly value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>Hard Cap:</td><td>$<input type="text" name="preSale1DollarHardCap" readonly value="" class="number"></td><td></td></tr>
+<!--         <tr><td>Current balance:</td><td><input type="text" name="balance" readonly value="" class="number"></td><td>ETH</td></tr>
+ -->    </table>
     <div><label>Token at: <input type="text" name="tokenAddress" readonly value="" class="ethAddress"></label></div>
     <div><input type="button" id="crowdsaleClaim" value="Claim Ether"> Transfer collected Ether from the contract to your wallet</div>
     <div><input type="button" id="crowdsaleFinalize" value="Finalize"> Finalize crowdsale: finish token minting, allow token transfer, change token ownership to yourself</div>
 </form>
+
+<br>
+<hr>
+<h2>Presale Round 2</h2>
+<h3>4. Start Round</h3>
+<form id="publishContractsForm">
+    <table>
+        <tr><td>Start time:</td><td><input type="text" name="startTimePresale2" value="" class="time"></td><td></td></tr>
+        <tr><td>End time:</td><td><input type="text" name="endTimePresale2" value="" class="time"></td><td></td></tr>
+    </table>
+    <div><input type="button" id="switchState2" value="Start"></div>
+    <br>
+    <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
+    <div><label>Crowdsale Published at: <input type="text" readonly name="publishedAddress" value="" class="ethAddress"></label></div>
+    <div><label>Token Published at: <input type="text" readonly name="tokenAddress" value="" class="ethAddress"></label></div>
+</form>
+
+<h3>5. Manage Presale Round 2 </h3>
+<form id="manageCrowdsale">
+    <div><label>Crowdsale at: <input type="text" name="crowdsaleAddress" value="" class="ethAddress"></label></div>
+    <div><input type="button" id="loadCrowdsaleInfo" value="Load info"></div>
+    <table>
+        <tr><td>Start time:</td><td><input type="text" name="startTimePresale2" readonly value="" class="time"></td><td></td></tr>
+        <tr><td>End time:</td><td><input type="text" name="endTimePresale2" readonly value="" class="time"></td><td></td></tr>
+        <tr><td>Current Rate:</td><td><input type="text" name="presale2tokensPerETH" readonly value="" class="number"></td><td>tokens = 1 ETH</td></tr>
+        <tr><td>Total collected:</td><td><input type="text" name="preSale2EthCollected" readonly value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>Hard Cap:</td><td>$<input type="text" name="preSale2DollarHardCap" readonly value="" class="number"></td><td></td></tr>
+<!--         <tr><td>Current balance:</td><td><input type="text" name="balance" readonly value="" class="number"></td><td>ETH</td></tr>
+ -->    </table>
+    <div><label>Token at: <input type="text" name="tokenAddress" readonly value="" class="ethAddress"></label></div>
+    <div><input type="button" id="crowdsaleClaim" value="Claim Ether"> Transfer collected Ether from the contract to your wallet</div>
+    <div><input type="button" id="crowdsaleFinalize" value="Finalize"> Finalize crowdsale: finish token minting, allow token transfer, change token ownership to yourself</div>
+</form>
+
+<br>
+<hr>
+<h2>ICO</h2>
+<h3>6. Start Round</h3>
+<form id="publishContractsForm">
+    <table>
+        <tr><td>Start time:</td><td><input type="text" name="ICOstartTime" value="" class="time"></td><td></td></tr>
+        <tr><td>End time:</td><td><input type="text" name="ICOendTime" value="" class="time"></td><td></td></tr>
+    </table>
+    <div><input type="button" id="switchState3" value="Start"></div>
+    <br>
+    <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
+    <div><label>Crowdsale Published at: <input type="text" readonly name="publishedAddress" value="" class="ethAddress"></label></div>
+    <div><label>Token Published at: <input type="text" readonly name="tokenAddress" value="" class="ethAddress"></label></div>
+</form>
+
+<h3>7. Manage ICO </h3>
+<form id="manageCrowdsale">
+    <div><label>Crowdsale at: <input type="text" name="crowdsaleAddress" value="" class="ethAddress"></label></div>
+    <div><input type="button" id="loadCrowdsaleInfo" value="Load info"></div>
+    <table>
+        <tr><td>Start time:</td><td><input type="text" name="ICOstartTime" readonly value="" class="time"></td><td></td></tr>
+        <tr><td>End time:</td><td><input type="text" name="ICOendTime" readonly value="" class="time"></td><td></td></tr>
+        <tr><td>Current Rate:</td><td><input type="text" name="saleTokensPerEth" readonly value="" class="number"></td><td>tokens = 1 ETH</td></tr>
+        <tr><td>Total collected:</td><td><input type="text" name="ICO_EthCollected" readonly value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>Hard Cap:</td><td>$<input type="text" name="ICO_DollarHardCap" readonly value="" class="number"></td><td></td></tr>
+<!--         <tr><td>Current balance:</td><td><input type="text" name="balance" readonly value="" class="number"></td><td>ETH</td></tr>
+ -->    </table>
+    <div><label>Token at: <input type="text" name="tokenAddress" readonly value="" class="ethAddress"></label></div>
+    <div><input type="button" id="crowdsaleClaim" value="Claim Ether"> Transfer collected Ether from the contract to your wallet</div>
+    <div><input type="button" id="crowdsaleFinalize" value="Finalize"> Finalize crowdsale: finish token minting, allow token transfer, change token ownership to yourself</div>
+</form>
+
+<br>
+<hr>
+<h2>Current Balance</h2>
+  <table>
+      <tr><td><h3>Current balance:</h3></td><td><input type="text" name="balance" readonly value="" class="number"></td><td>ETH</td></tr>
+  </table>
 
 </body>
 </html>

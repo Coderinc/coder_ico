@@ -3,7 +3,6 @@ pragma solidity ^0.4.0;
 import './zeppelin/ownership/Ownable.sol';
 // import './oraclizeAPI_mod.sol';
 import './NigamCoin.sol';
-// import './zeppelin/math/SafeMath.sol';
 
 contract NigamCrowdsale is Ownable, HasNoTokens {
     using SafeMath for uint256;
@@ -12,34 +11,35 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     NigamCoin public token;     //token for crowdsale
     uint256 public constant ethPrice = 300;    //ETHUSD price in $0.00001, will be set by Oraclize, example: if 1 ETH = 295.14000 USD, then ethPrice = 29514000
 
-    uint256   public preSale1BasePrice;       //price in cents
-    // uint8     public preSale1BonusSchedule;   //bonus percents
-    // uint256   public preSale1BonusLimits;     //limits to apply bonuses
-    uint256   public preSale1EthHardCap;      //hard cap for Round 1 presale in ether  
-    uint256   public preSale1EthCollected;    //how much ether already collected at pre-sale 1
+    uint256   public preSale1_startTimestamp;           //when Presale 1 started uint256 public
+    uint256   public preSale1BasePrice;                 //price in cents
+    uint256   public preSale1DollarHardCap;             //hard cap for Round 1 presale in ether  
+    uint256   public preSale1EthCollected;              //how much ether already collected at pre-sale 1
+    uint256   public preSale1_endTimestamp;             //when Presale 1 ends uint256 public
 
-    uint256   public preSale2BasePrice;       //price in cents
-    // uint8     public preSale2BonusSchedule;   //bonus percents
-    // uint256   public preSale2BonusLimits;     //limits to apply bonuses
-    uint256   public preSale2EthHardCap;      //hard cap for Round 2 presale in ether  
-    uint256   public preSale2EthCollected;    //how much ether already collected at pre-sale 2
+    uint256   public preSale2_startTimestamp;           //when Presale 2 started uint256 public
+    uint256   public preSale2BasePrice;                 //price in cents
+    uint256   public preSale2DollarHardCap;             //hard cap for Round 2 presale in ether  
+    uint256   public preSale2EthCollected;              //how much ether already collected at pre-sale 2
+    uint256   public preSale2_endTimestamp;             //when Presale 2 ends uint256 public
 
+    uint256   public ICO_startTimestamp;                //when ICO sale started uint256 public
+    uint256   public ICO_basePrice;                     //price in cents uint32  public
+    uint32    public priceIncreaseInterval;             //seconds before price increase uint32
+    uint32    public priceIncreaseAmount;               //amount to increase price to (in cents)
+    uint256   public ICO_DollarHardCap;                 //hard cap for the main sale round in ether
+    uint256   public ICO_EthCollected;                  //how much ether already collected at main sale
+    uint256   public ICO_endTimestamp;                  //when Presale 2 ends uint256 public
 
-    uint256   public saleBasePrice;                 //price in cents uint32  public
-    uint32    public salePriceIncreaseInterval;     //seconds before price increase uint32
-    uint32    public salePriceIncreaseAmount;       //amount to increase price to (in cents)
-    uint256   public saleEthHardCap;                //hard cap for the main sale round in ether
     uint256   public saleStartTimestamp;            //when sale started uint256 public
-    uint256   public saleEthCollected;              //how much ether already collected at main sale
+    uint8 ownersPercent;                            //percent of tokens that will be minted to owner during the sale
 
-    uint8 ownersPercent;              //percent of tokens that will be minted to owner during the sale
-
-    enum State { Paused, FirstPreSale, SecondPreSale, Sale, Finished }
-    State public state;                  //current state of the contract
+    enum State { Paused, FirstPreSale, SecondPreSale, ICO, Finished }
+    State public state;                             //current state of the contract
 
 
 
-    uint32 public oraclizeUpdateInterval = 60;  //update price interval in seconds
+    uint32 public oraclizeUpdateInterval = 60;      //update price interval in seconds
 
     /**
     * event for price update logging
@@ -57,36 +57,23 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
 
 
     function NigamCrowdsale(NigamCoin _token, 
-        uint256 _preSale1BasePrice, uint256 _preSale1EthHardCap,
-        uint256 _preSale2BasePrice, uint256 _preSale2EthHardCap,
-        uint256 _saleBasePrice, uint32 _salePriceIncreaseInterval, uint32 _salePriceIncreaseAmount, uint256 _saleEthHardCap,
+        uint256 _preSale1BasePrice, uint256 _preSale1DollarHardCap,
+        uint256 _preSale2BasePrice, uint256 _preSale2DollarHardCap,
+        uint256 _ICO_basePrice, uint32 _priceIncreaseInterval, uint32 _priceIncreaseAmount, uint256 _ICO_DollarHardCap,
         uint8 _ownersPercent
         ){
         state = State.Paused;
 
-        uint8 i;
-
-        // assert(_preSale1BonusSchedule.length == 5 && _preSale1BonusSchedule.length == _preSale1BonusLimits.length);
         preSale1BasePrice = _preSale1BasePrice;             //0.0016667 or 1/600 ETH
-        //preSale1BonusSchedule = _preSale1BonusSchedule;     //[5, 10, 15, 25, 50];    
-        // for(i=0; i< _preSale1BonusSchedule.length; i++) preSale1BonusSchedule[i] = _preSale1BonusSchedule[i];
-        //preSale1BonusLimits   = _preSale1BonusLimits;       //[4 ether, 10 ether, 15 ether, 25 ether, 100 ether];
-        // for(i=0; i< _preSale1BonusLimits.length; i++) preSale1BonusLimits[i] = _preSale1BonusLimits[i];
-        preSale1EthHardCap = _preSale1EthHardCap;           //1666.67 ether;
-        // assert(preSale1BonusSchedule.length == preSale1BonusLimits.length);
+        preSale1DollarHardCap = _preSale1DollarHardCap;           //1666.67 ether;
 
-        // assert(preSale2BonusSchedule.length == 5 && _preSale2BonusSchedule.length == _preSale2BonusLimits.length);
         preSale2BasePrice = _preSale2BasePrice;             //0.0025 or 1/400 ETH;
-        //preSale2BonusSchedule = _preSale2BonusSchedule;     //[1, 3, 5, 8, 25]
-        // for(i=0; i< _preSale2BonusSchedule.length; i++) preSale2BonusSchedule[i] = _preSale2BonusSchedule[i];
-        //preSale2BonusLimits = _preSale2BonusLimits;         //[500 ether, 1000 ether, 2500 ether, 5000 ether, 1000 ether];
-        // for(i=0; i< _preSale2BonusLimits.length; i++) preSale2BonusLimits[i] = _preSale2BonusLimits[i];
-        preSale2EthHardCap = _preSale2EthHardCap;                   //16666.67 ether;
+        preSale2DollarHardCap = _preSale2DollarHardCap;                   //16666.67 ether;
 
-        saleBasePrice = _saleBasePrice;                         //0.003333 or 1/300 ETH;
-        salePriceIncreaseInterval = _salePriceIncreaseInterval;   //24*60*60; //1 day
-        salePriceIncreaseAmount = _salePriceIncreaseAmount;     //0.00066667 or 1/1500 ETH;
-        saleEthHardCap = _saleEthHardCap;                       //166666.67 ether;
+        ICO_basePrice = _ICO_basePrice;                         //0.003333 or 1/300 ETH;
+        priceIncreaseInterval = _priceIncreaseInterval;   //24*60*60; //1 day
+        priceIncreaseAmount = _priceIncreaseAmount;     //0.00066667 or 1/1500 ETH;
+        ICO_DollarHardCap = _ICO_DollarHardCap;                       //166666.67 ether;
 
         ownersPercent = _ownersPercent;   //whole number that will be divided by 100 later
 
@@ -107,7 +94,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         uint256 ownerTokens = buyerTokens.mul(ownersPercent).div(100); //ownersPercent is percents, so divide to 100
         token.mint(msg.sender, buyerTokens);
         token.mint(owner, ownerTokens);
-        TokenPurchase(msg.sender, msg.value, buyerTokens);
+        TokenPurchase(msg.sender, msg.value, buyerTokens);    //event for TokenPurchase
     }
     /**
     * @notice Check if crowdsale is open or not
@@ -126,17 +113,17 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         if(state == State.Paused || state == State.Finished) return 0;
         uint256 rate;
         if(state == State.FirstPreSale) {
-            rate = calculatePreSaleRateOne(etherAmount, preSale1BasePrice);
+            rate = calculatePreSaleOneRate(etherAmount, preSale1BasePrice);
         } else if(state == State.SecondPreSale) {
-            rate = calculatePreSaleRateTwo(etherAmount, preSale2BasePrice);
-        } else if(state == State.Sale){
-            rate = calculateSaleRate();
+            rate = calculatePreSaleTwoRate(etherAmount, preSale2BasePrice);
+        } else if(state == State.ICO){
+            rate = calculateICOrate();
         } else {
             revert();   //state is wrong
         }
         return rate;
     }
-    function calculatePreSaleRateOne(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
+    function calculatePreSaleOneRate(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
         require(etherAmount >= 2 ether);                //minimum contribution 2 ETH
         uint8 bonusPercentage;
         uint256 rate = ethPrice.div(basePrice);  //calculate initial number of tokens for ETH sent
@@ -154,13 +141,16 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         }
         if(etherAmount >= 4 ether) {         //4 ETH 
             bonusPercentage = 5;              //5% of baseTokens awarded
-        }         
+        }
+        else {
+            bonus = 0;                       //no bonus for anything less than 4 ETH
+        }      
         uint256 bonus = rate.mul(bonusPercentage.div(100));   //divide by 100 to put in percent
         rate = rate.add(bonus);
         return rate;
     }
 
-    function calculatePreSaleRateTwo(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
+    function calculatePreSaleTwoRate(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
         uint8 bonusPercentage;        
         uint256 rate = ethPrice.div(basePrice);       //calculate initial number of tokens for ETH sent
         if(etherAmount >= 10000 ether) {       //10000 ETH
@@ -177,27 +167,30 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         }
         if(etherAmount >= 500 ether) {      //500 ETH 
             bonusPercentage = 1;             //1% of baseTokens awarded
-        }         
+        }
+        else {
+            bonus = 0;                       //no bonus for anything less than 4 ETH
+        }               
         uint256 bonus = rate.mul(bonusPercentage.div(100));   //divide by 100 to put in percent
         rate = rate.add(bonus);
         return rate;
     }
 
-    function calculateSaleRate() constant returns(uint256){
-        if(saleStartTimestamp == 0 || now < saleStartTimestamp) return 0;
-        uint256 saleRunningSeconds = now - saleStartTimestamp;
-        uint256 passedIntervals = saleRunningSeconds / salePriceIncreaseInterval; //remainder will be discarded
-        uint256 price = saleBasePrice.add( passedIntervals.mul(salePriceIncreaseAmount) );
+    function calculateICOrate() constant returns(uint256){
+        if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
+        uint256 saleRunningSeconds = now - ICO_startTimestamp;
+        uint256 passedIntervals = saleRunningSeconds / priceIncreaseInterval; //remainder will be discarded
+        uint256 price = ICO_basePrice.add( passedIntervals.mul(priceIncreaseAmount) );
         uint256 rate = ethPrice.div(price);
         return rate;
     }
     function hardCapReached(State _state) constant returns(bool){
         if(_state == State.FirstPreSale) {
-            return preSale1EthCollected >= preSale1EthHardCap;
+            return preSale1EthCollected >= preSale1DollarHardCap.div(ethPrice);
         }else if(_state == State.SecondPreSale) {
-            return preSale2EthCollected >= preSale2EthHardCap;
-        }else if(_state == State.Sale){
-            return saleEthCollected >= saleEthHardCap;
+            return preSale2EthCollected >= preSale2DollarHardCap.div(ethPrice);
+        }else if(_state == State.ICO){
+            return ICO_EthCollected >= ICO_DollarHardCap.div(ethPrice);
         }else {
             return false;
         }
@@ -213,8 +206,15 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
             token.finishMinting();
             token.transferOwnership(owner);
             oraclizeUpdateInterval = 0;
-        }else if(newState == State.Sale && saleStartTimestamp == 0) {
-            saleStartTimestamp = now;
+        }else if(newState == State.FirstPreSale && preSale1_startTimestamp == 0) {
+            preSale1EthCollected = this.balance;
+            preSale1_startTimestamp = now;
+        }else if(newState == State.SecondPreSale && preSale2_startTimestamp == 0) {
+            preSale2EthCollected = this.balance - preSale1EthCollected;
+            preSale2_startTimestamp = now;
+        }else if(newState == State.ICO && ICO_startTimestamp == 0) {
+            ICO_EthCollected = this.balance - preSale2EthCollected - preSale1EthCollected;
+            ICO_startTimestamp = now;
         }
         state = newState;
     }
@@ -250,8 +250,8 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     */
     // function __callback(bytes32 myid, string result, bytes proof) {
     //     require(msg.sender == oraclize_cbAddress());
-    //     ethPrice = parseInt(result, 5); //5 makes ethPrice to be price in 0.00001 USD
-    //     EthPriceUpdate(ethPrice);
+    //     ethPrice = parseInt(result, 5);      //5 makes ethPrice to be price in 0.00001 USD
+    //     EthPriceUpdate(ethPrice);            //Event for ETH Price Update
     //     if(oraclizeUpdateInterval > 0){
     //         updateEthPriceInternal();
     //     }
