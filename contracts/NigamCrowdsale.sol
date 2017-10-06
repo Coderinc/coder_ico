@@ -59,7 +59,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     function NigamCrowdsale(NigamCoin _token, 
         uint256 _preSale1BasePrice, uint256 _preSale1DollarHardCap,
         uint256 _preSale2BasePrice, uint256 _preSale2DollarHardCap,
-        uint256 _ICO_basePrice, uint32 _priceIncreaseInterval, uint32 _priceIncreaseAmount, uint256 _ICO_DollarHardCap,
+        uint256 _ICO_basePrice, uint256 _ICO_DollarHardCap, uint32 _priceIncreaseInterval, uint32 _priceIncreaseAmount,
         uint8 _ownersPercent
         ){
         state = State.Paused;
