@@ -126,7 +126,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     function calculatePreSaleOneRate(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
         require(etherAmount >= 2 ether);                //minimum contribution 2 ETH
         uint8 bonusPercentage;
-        uint256 rate = ethPrice.div(basePrice);  //calculate initial number of tokens for ETH sent
+        uint256 rate = ethPrice.div(basePrice).mul(100);  //calculate initial number of tokens for ETH sent, multiply by 100 to make rate in dollars
         if(etherAmount >= 100 ether) {       //100 ETH
             bonusPercentage = 50;             //50% of baseTokens awarded
         }
@@ -152,7 +152,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
 
     function calculatePreSaleTwoRate(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
         uint8 bonusPercentage;        
-        uint256 rate = ethPrice.div(basePrice);       //calculate initial number of tokens for ETH sent
+        uint256 rate = ethPrice.div(basePrice).mul(100);       //calculate initial number of tokens for ETH sent, multiply by 100 to make rate in dollars
         if(etherAmount >= 10000 ether) {       //10000 ETH
             bonusPercentage = 25;               //25% of baseTokens awarded
         }
@@ -181,14 +181,14 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
         uint256 passedIntervals = saleRunningSeconds / priceIncreaseInterval; //remainder will be discarded
         uint256 price = ICO_basePrice.add( passedIntervals.mul(priceIncreaseAmount) );
-        uint256 rate = ethPrice.div(price);
+        uint256 rate = ethPrice.div(price).mul(100);   //multiply by 100 to make rate in dollars
         return rate;
     }
     function hardCapReached(State _state) constant returns(bool){
         if(_state == State.FirstPreSale) {
-            return preSale1EthCollected >= preSale1DollarHardCap.div(ethPrice);
+            return preSale1EthCollected >= preSale1DollarHardCap.div(ethPrice);   //hard cap inputted in dollars
         }else if(_state == State.SecondPreSale) {
-            return preSale2EthCollected >= preSale2DollarHardCap.div(ethPrice);
+            return preSale2EthCollected >= preSale2DollarHardCap.div(ethPrice);   //hard cap inputted in dollars
         }else if(_state == State.ICO){
             return ICO_EthCollected >= ICO_DollarHardCap.div(ethPrice);
         }else {
