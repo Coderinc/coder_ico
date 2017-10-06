@@ -170,15 +170,15 @@ jQuery(document).ready(function($) {
         });
         web3.eth.getBalance(crowdsaleAddress, function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name=balance]', form).val(web3.fromWei(result, 'ether'));
+            $('input[name="balance"]', form).val(web3.fromWei(result, 'ether'));
         });
         crowdsaleInstance.token(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name=tokenAddress]', form).val(result);
+            $('input[name="tokenAddress"]', form).val(result);
         });
         crowdsaleInstance.State(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name=contractState]', form).val(result);
+            $('input[name="contractState"]', form).val(result);
         });        
     });
     $('#switchState1').click(function(){
