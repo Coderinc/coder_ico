@@ -79,7 +79,6 @@ jQuery(document).ready(function($) {
         let preSale2_endTimestamp  = timeStringToTimestamp($('input[name="endTimePresale2"]', form).val());
         let ICO_startTimestamp = timeStringToTimestamp($('input[name="startTimeICO"]', form).val());
         let ICO_endTimestamp  = timeStringToTimestamp($('input[name="endTimeICO"]', form).val());
-        // let hardCap  = web3.toWei($('input[name=hardCap]', form).val(), 'ether');
         let preSale1BasePrice = $('input[name="preSale1BasePrice"]', form).val();
         let preSale1DollarHardCap = $('input[name="preSale1DollarHardCap"]', form).val();
         let preSale2BasePrice = $('input[name="preSale2BasePrice"]', form).val();
@@ -184,7 +183,7 @@ jQuery(document).ready(function($) {
     $('#switchState1').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
-        let form = $('#manageCrowdsale');
+        let form = $('#manageCrowdsale1');
 
         crowdsaleInstance.setState(1, function (error, result){
             if(!!error){
@@ -199,7 +198,7 @@ jQuery(document).ready(function($) {
     $('#switchState2').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
-        let form = $('#manageCrowdsale');
+        let form = $('#manageCrowdsale2');
 
         crowdsaleInstance.setState(2, function (error, result){
             if(!!error){
@@ -214,7 +213,7 @@ jQuery(document).ready(function($) {
     $('#switchState3').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
-        let form = $('#manageCrowdsale');
+        let form = $('#manageCrowdsale3');
 
         crowdsaleInstance.setState(3, function (error, result){
             if(!!error){

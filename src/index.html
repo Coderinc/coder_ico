@@ -17,12 +17,10 @@
 <body>
 <h1>ICO Admin Panel</h1>
 <div class="error" id="errormsg"></div>
-<div>
-  <table>
-      <tr><td><h3>Current Time:</h3></td><td><input type="text" id="clock" name="clock" value="" readonly class="time"></td><td>(Z = UTC timezone, ISO8601 format)</td></tr>
-      <tr><td><h3>Contract State:</h3></td><td><input type="text" readonly name="contractState" value="" class="ethAddress"></td></tr>
-  </table>
-</div>
+<form id="displayContractState">
+      <h3>Current Time:</h3><input type="text" id="clock" name="clock" value="" readonly class="time">(Z = UTC timezone, ISO8601 format)
+      <h3>Contract State:</h3><input type="text" readonly name="contractState" value="" class="ethAddress">
+</form>
 <h2>0. Load contracts</h2>
 <form id="loadContractsForm">
     <label for="tokenABI">Token ABI:

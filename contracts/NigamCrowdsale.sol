@@ -1,15 +1,15 @@
 pragma solidity ^0.4.0;
 
 import './zeppelin/ownership/Ownable.sol';
-// import './oraclizeAPI_mod.sol';
+import './oraclize/oraclizeAPI.sol';
 import './NigamCoin.sol';
 
-contract NigamCrowdsale is Ownable, HasNoTokens {
+contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
     using SafeMath for uint256;
     using SafeMath for uint8;
 
-    NigamCoin public token;     //token for crowdsale
-    uint256 public constant ethPrice = 300;    //ETHUSD price in $0.00001, will be set by Oraclize, example: if 1 ETH = 295.14000 USD, then ethPrice = 29514000
+    NigamCoin public token;                //token for crowdsale
+    uint256 public ethPrice;      //ETHUSD price in $0.01 USD, will be set by Oraclize, example: if 1 ETH = 295.14000 USD, then ethPrice = 29514
 
     uint256   public preSale1_startTimestamp;           //when Presale 1 started uint256 public
     uint256   public preSale1BasePrice;                 //price in cents
@@ -77,9 +77,9 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
 
         ownersPercent = _ownersPercent;   //whole number that will be divided by 100 later
 
-        //token = new NigamCoin();
+        //token = new NigamCoin();        //creating token in constructor so that separate token contract doesn't need to be published
         token = _token;
-        //assert(token.delegatecall( bytes4(keccak256("transferOwnership(address)")), this));
+        //assert(token.delegatecall( bytes4(keccak256("transferOwnership(address)")), this));   //delegate call to transfer ownership of token to crowdsale contract
     }
 
     /**
@@ -124,26 +124,26 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         return rate;
     }
     function calculatePreSaleOneRate(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
-        require(etherAmount >= 2 ether);                //minimum contribution 2 ETH
+        require(etherAmount >= 2 ether);         //minimum contribution 2 ETH
         uint8 bonusPercentage;
-        uint256 rate = ethPrice.div(basePrice).mul(100);  //calculate initial number of tokens for ETH sent, multiply by 100 to make rate in dollars
-        if(etherAmount >= 100 ether) {       //100 ETH
-            bonusPercentage = 50;             //50% of baseTokens awarded
+        uint256 rate = ethPrice.div(basePrice);  //calculate initial number of tokens for ETH sent, multiply by 100 to make rate in dollars (if not using Oraclize)
+        if(etherAmount >= 100 ether) {           //100 ETH
+            bonusPercentage = 50;                //50% of baseTokens awarded
         }
-        if(etherAmount >= 25 ether) {        //25 ETH
-            bonusPercentage = 25;             //25% of baseTokens awarded
+        if(etherAmount >= 25 ether) {            //25 ETH
+            bonusPercentage = 25;                //25% of baseTokens awarded
         }
-        if(etherAmount >= 15 ether) {        //15 ETH 
-            bonusPercentage = 15;             //15% of baseTokens awarded
+        if(etherAmount >= 15 ether) {            //15 ETH 
+            bonusPercentage = 15;                //15% of baseTokens awarded
         }
-        if(etherAmount >= 10 ether) {        //10 ETH 
-            bonusPercentage = 10;             //10% of baseTokens awarded
+        if(etherAmount >= 10 ether) {            //10 ETH 
+            bonusPercentage = 10;                //10% of baseTokens awarded
         }
-        if(etherAmount >= 4 ether) {         //4 ETH 
-            bonusPercentage = 5;              //5% of baseTokens awarded
+        if(etherAmount >= 4 ether) {             //4 ETH 
+            bonusPercentage = 5;                 //5% of baseTokens awarded
         }
         else {
-            bonus = 0;                       //no bonus for anything less than 4 ETH
+            bonus = 0;                           //no bonus for anything less than 4 ETH
         }      
         uint256 bonus = rate.mul(bonusPercentage.div(100));   //divide by 100 to put in percent
         rate = rate.add(bonus);
@@ -152,21 +152,21 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
 
     function calculatePreSaleTwoRate(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
         uint8 bonusPercentage;        
-        uint256 rate = ethPrice.div(basePrice).mul(100);       //calculate initial number of tokens for ETH sent, multiply by 100 to make rate in dollars
-        if(etherAmount >= 10000 ether) {       //10000 ETH
-            bonusPercentage = 25;               //25% of baseTokens awarded
+        uint256 rate = ethPrice.div(basePrice);  //calculate initial number of tokens for ETH sent, multiply by 100 to make rate in dollars (if not using Oraclize)
+        if(etherAmount >= 10000 ether) {         //10000 ETH
+            bonusPercentage = 25;                //25% of baseTokens awarded
         }
-        if(etherAmount >= 5000 ether) {     //5000 ETH
-            bonusPercentage = 8;             //8% of baseTokens awarded
+        if(etherAmount >= 5000 ether) {         //5000 ETH
+            bonusPercentage = 8;                //8% of baseTokens awarded
         }
-        if(etherAmount >= 2500 ether) {     //2500 ETH 
-            bonusPercentage = 5;             //5% of baseTokens awarded
+        if(etherAmount >= 2500 ether) {         //2500 ETH 
+            bonusPercentage = 5;                //5% of baseTokens awarded
         }
-        if(etherAmount >= 1000 ether) {     //1000 ETH 
-            bonusPercentage = 3;             //3% of baseTokens awarded
+        if(etherAmount >= 1000 ether) {         //1000 ETH 
+            bonusPercentage = 3;                //3% of baseTokens awarded
         }
-        if(etherAmount >= 500 ether) {      //500 ETH 
-            bonusPercentage = 1;             //1% of baseTokens awarded
+        if(etherAmount >= 500 ether) {          //500 ETH 
+            bonusPercentage = 1;                //1% of baseTokens awarded
         }
         else {
             bonus = 0;                       //no bonus for anything less than 4 ETH
@@ -181,16 +181,16 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
         uint256 passedIntervals = saleRunningSeconds / priceIncreaseInterval; //remainder will be discarded
         uint256 price = ICO_basePrice.add( passedIntervals.mul(priceIncreaseAmount) );
-        uint256 rate = ethPrice.div(price).mul(100);   //multiply by 100 to make rate in dollars
+        uint256 rate = ethPrice.div(price);   //multiply by 100 to make rate in dollars (if not using Oraclize)
         return rate;
     }
     function hardCapReached(State _state) constant returns(bool){
         if(_state == State.FirstPreSale) {
-            return preSale1EthCollected >= preSale1DollarHardCap.div(ethPrice);   //hard cap inputted in dollars
+            return preSale1EthCollected >= preSale1DollarHardCap.div(ethPrice).mul(100);   //multiply by 100 as per Oraclize ETH price parsing
         }else if(_state == State.SecondPreSale) {
-            return preSale2EthCollected >= preSale2DollarHardCap.div(ethPrice);   //hard cap inputted in dollars
+            return preSale2EthCollected >= preSale2DollarHardCap.div(ethPrice).mul(100);   //multiply by 100 as per Oraclize ETH price parsing
         }else if(_state == State.ICO){
-            return ICO_EthCollected >= ICO_DollarHardCap.div(ethPrice);
+            return ICO_EthCollected >= ICO_DollarHardCap.div(ethPrice).mul(100);           //multiply by 100 as per Oraclize ETH price parsing
         }else {
             return false;
         }
@@ -230,36 +230,35 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     * @notice Owner can change price update interval
     * @param newOraclizeUpdateInterval Update interval in seconds. Zero will stop updates.
     */
-    // function updateInterval(uint32 newOraclizeUpdateInterval) public onlyOwner {
-    //     if(oraclizeUpdateInterval == 0 && newOraclizeUpdateInterval > 0){
-    //         oraclizeUpdateInterval = newOraclizeUpdateInterval;
-    //         updateEthPriceInternal();
-    //     }else{
-    //         oraclizeUpdateInterval = newOraclizeUpdateInterval;
-    //     }
-    // }
+    function updateInterval(uint32 newOraclizeUpdateInterval) public onlyOwner {
+        if(oraclizeUpdateInterval == 0 && newOraclizeUpdateInterval > 0){
+            oraclizeUpdateInterval = newOraclizeUpdateInterval;
+            updateEthPriceInternal();
+        }else{
+            oraclizeUpdateInterval = newOraclizeUpdateInterval;
+        }
+    }
     /**
     * @notice Owner can do this to start price updates
     * Also, he can put some ether to the contract so that it can pay for the updates
     */
-    // function updateEthPrice() public payable onlyOwner{
-    //     updateEthPriceInternal();
-    // }
+    function updateEthPrice() public payable onlyOwner{
+        updateEthPriceInternal();
+    }
     /**
     * @dev Callback for Oraclize
     */
-    // function __callback(bytes32 myid, string result, bytes proof) {
-    //     require(msg.sender == oraclize_cbAddress());
-    //     ethPrice = parseInt(result, 5);      //5 makes ethPrice to be price in 0.00001 USD
-    //     EthPriceUpdate(ethPrice);            //Event for ETH Price Update
-    //     if(oraclizeUpdateInterval > 0){
-    //         updateEthPriceInternal();
-    //     }
-    // }
-    // function updateEthPriceInternal() internal {
-    //     oraclize_query(oraclizeUpdateInterval, "URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
-    // }
-
+    function __callback(bytes32 myid, string result, bytes proof) {
+        require(msg.sender == oraclize_cbAddress());
+        ethPrice = parseInt(result, 2);      //2 makes ethPrice to be price in 0.01 USD
+        EthPriceUpdate(ethPrice);            //Event for ETH Price Update
+        if(oraclizeUpdateInterval > 0){
+            updateEthPriceInternal();
+        }
+    }
+    function updateEthPriceInternal() internal {
+        oraclize_query(oraclizeUpdateInterval, "URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
+    }
 }
 
 
