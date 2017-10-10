@@ -117,27 +117,27 @@ jQuery(document).ready(function($) {
 
         crowdsaleInstance.preSale1_startTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="preSale1_startTimestamp"]', form).val(timestampToString(result));
+            $('input[name="startTimePresale1"]', form).val(timestampToString(result));
         });
         crowdsaleInstance.preSale1_endTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="preSale1_endTimestamp"]', form).val(timestampToString(result));
+            $('input[name="endTimePresale1"]', form).val(timestampToString(result));
         });
         crowdsaleInstance.preSale2_startTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="preSale2_startTimestamp"]', form).val(timestampToString(result));
+            $('input[name="startTimePresale2"]', form).val(timestampToString(result));
         });
         crowdsaleInstance.preSale2_endTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="preSale2_endTimestamp"]', form).val(timestampToString(result));
+            $('input[name="endTimePresale2"]', form).val(timestampToString(result));
         });
         crowdsaleInstance.ICO_startTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="ICO_startTimestamp"]', form).val(timestampToString(result));
+            $('input[name="startTimeICO"]', form).val(timestampToString(result));
         });
         crowdsaleInstance.ICO_endTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="ICO_endTimestamp"]', form).val(timestampToString(result));
+            $('input[name="endTimeICO"]', form).val(timestampToString(result));
         });
         crowdsaleInstance.rate(function(error, result){             //currentRate function from contract
             if(!!error) console.log('Contract info loading error:\n', error);
