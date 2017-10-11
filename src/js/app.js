@@ -51,20 +51,20 @@ jQuery(document).ready(function($) {
         });
     };
 
-    $('#publishToken').click(function(){
-        if(tokenContract == null) return;
-        printError('');
-        let form = $('#publishContractsForm');
+    // $('#publishToken').click(function(){
+    //     if(tokenContract == null) return;
+    //     printError('');
+    //     let form = $('#publishContractsForm');
 
-        publishContract(tokenContract,[],
-            function(tx){
-                $('input[name="publishedTx"]',form).val(tx);
-            }, 
-            function(contract){
-                    $('input[name="tokenAddress"]',form).val(contract.address);
-            }
-        );
-    });
+    //     publishContract(tokenContract,[],
+    //         function(tx){
+    //             $('input[name="publishedTx"]',form).val(tx);
+    //         }, 
+    //         function(contract){
+    //                 $('input[name="tokenAddress"]',form).val(contract.address);
+    //         }
+    //     );
+    // });
 
     $('#publishContracts').click(function(){
         if(crowdsaleContract == null) return;
@@ -90,7 +90,7 @@ jQuery(document).ready(function($) {
         let ownersPercent  = $('input[name="ownersPercent"]', form).val();
 
         publishContract(crowdsaleContract, 
-            [tokenAddress, preSale1BasePrice, preSale1DollarHardCap, preSale2BasePrice, preSale2DollarHardCap, ICO_basePrice, ICO_DollarHardCap, priceIncreaseInterval, priceIncreaseAmount, ownersPercent],
+            [preSale1BasePrice, preSale1DollarHardCap, preSale2BasePrice, preSale2DollarHardCap, ICO_basePrice, ICO_DollarHardCap, priceIncreaseInterval, priceIncreaseAmount, ownersPercent],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
             }, 

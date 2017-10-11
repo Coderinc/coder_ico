@@ -17,10 +17,7 @@
 <body>
 <h1>ICO Admin Panel</h1>
 <div class="error" id="errormsg"></div>
-<form id="displayContractState">
-      <h3>Current Time:</h3><input type="text" id="clock" name="clock" value="" readonly class="time">(Z = UTC timezone, ISO8601 format)
-      <h3>Contract State:</h3><input type="text" readonly name="contractState" value="" class="ethAddress">
-</form>
+<h3>Current Time:</h3><input type="text" id="clock" name="clock" value="" readonly class="time">(Z = UTC timezone, ISO8601 format)
 <h2>0. Load contracts</h2>
 <form id="loadContractsForm">
     <label for="tokenABI">Token ABI:
@@ -48,7 +45,7 @@
         <tr><td>Price Increase:</td><td><input type="text" name="priceIncreaseAmount" value="" class="number"></td><td>in cents</td></tr>
         <tr><td>Owner Token Reserve:</td><td><input type="text" name="ownersPercent" value="" class="number"></td><td>%</td></tr>
     </table>
-    <div><input type="button" id="publishToken" value="Publish Token"></div>
+    <!-- <div><input type="button" id="publishToken" value="Publish Token"></div> -->
     <div><input type="button" id="publishContracts" value="Publish Crowdsale"></div>
     <br>
     <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
