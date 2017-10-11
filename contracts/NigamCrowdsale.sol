@@ -89,7 +89,6 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     function() payable {
         require(msg.value > 0);
         require(crowdsaleOpen());
-        uint256 amountRaised += msg.value;
         uint256 rate = currentRate(msg.value);
         assert(rate > 0);
         uint256 buyerTokens = rate.mul(msg.value);
@@ -97,6 +96,16 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         token.mint(msg.sender, buyerTokens);
         token.mint(owner, ownerTokens);
         TokenPurchase(msg.sender, msg.value, buyerTokens);    //event for TokenPurchase
+        if (state == State.FirstPreSale) {
+            preSale1EthCollected = preSale1EthCollected.add(msg.value);
+        }else if (state == State.SecondPreSale) {
+            preSale2EthCollected = preSale2EthCollected.add(msg.value);
+        }else if (state == State.ICO) {
+            ICO_EthCollected = ICO_EthCollected.add(msg.value);
+        }
+        if ( hardCapReached(state) ){
+            state = State.Paused;
+        }
     }
     /**
     * @notice Check if crowdsale is open or not
@@ -186,19 +195,13 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         uint256 rate = ethPrice.div(price).mul(100);   //calculate initial # tokens for ETH sent, convert to cents
         return rate;
     }
-    function hardCapReached(State _state) constant returns(bool){
-        if(_state == State.FirstPreSale) {
-            preSale1EthCollected = amountRaised;
+    function hardCapReached(State state) constant returns(bool){
+        if(state == State.FirstPreSale) {
             return preSale1EthCollected >= preSale1DollarHardCap.div(ethPrice);
-            setState(State.SecondPreSale);   
-        }else if(_state == State.SecondPreSale) {
-            preSale2EthCollected = amountRaised - preSale1EthCollected;
+        }else if(state == State.SecondPreSale) {
             return preSale2EthCollected >= preSale2DollarHardCap.div(ethPrice);
-            setState(State.ICO);   
-        }else if(_state == State.ICO){
-            ICO_EthCollected = amountRaised - preSale2EthCollected - preSale1EthCollected;
+        }else if(state == State.ICO){
             return ICO_EthCollected >= ICO_DollarHardCap.div(ethPrice);    
-            setState(State.Finished);         
         }else {
             return false;
         }
