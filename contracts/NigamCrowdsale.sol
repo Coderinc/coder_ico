@@ -182,7 +182,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         else {
             bonus = 0;                       //no bonus for anything less than 4 ETH
         }               
-        uint256 bonus = rate.mul(bonusPercentage.div(100));   //divide by 100 to put in percent
+        uint256 bonus = rate.mul(bonusPercentage);   
         rate = rate.add( bonus.div(100) );      //add only the perecentage of bonus (divide by 100)
         return rate;
     }
@@ -192,7 +192,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
         uint256 passedIntervals = saleRunningSeconds / priceIncreaseInterval; //remainder will be discarded
         uint256 price = ICO_basePrice.add( passedIntervals.mul(priceIncreaseAmount) );
-        uint256 rate = ethPrice.div(price).mul(100);   //calculate initial # tokens for ETH sent, convert to cents
+        uint256 rate = ethPrice.div(price).mul(100);   //calculate initial # tokens for ETH sent, convert from cents
         return rate;
     }
     function hardCapReached(State state) constant returns(bool){
