@@ -34,7 +34,7 @@ contract BurnableToken is StandardToken {
     * @dev Burns tokens and send reward
     * This is internal function because it DOES NOT check 
     * if _from has allowance to burn tokens.
-    * It is intended to be used in transfer() and transferFrom() which do this check.
+    * It is intended to be used in transfer() and transferFrom() which does this check.
     * @param _from The address which you want to burn tokens from
     * @param _amount of tokens to be burned
     */

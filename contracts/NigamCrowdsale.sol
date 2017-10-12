@@ -195,12 +195,12 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         uint256 rate = ethPrice.div(price).mul(100);   //calculate initial # tokens for ETH sent, convert from cents
         return rate;
     }
-    function hardCapReached(State state) constant returns(bool){
-        if(state == State.FirstPreSale) {
+    function hardCapReached(State _state) constant returns(bool){
+        if(_state == State.FirstPreSale) {
             return preSale1WeiCollected >= preSale1DollarHardCap.mul(1000000000000000000).div(ethPrice);
-        }else if(state == State.SecondPreSale) {
+        }else if(_state == State.SecondPreSale) {
             return preSale2WeiCollected >= preSale2DollarHardCap.mul(1000000000000000000).div(ethPrice);
-        }else if(state == State.ICO){
+        }else if(_state == State.ICO){
             return ICO_WeiCollected >= ICO_DollarHardCap.mul(1000000000000000000).div(ethPrice);    
         }else {
             return false;
@@ -234,7 +234,6 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         require(this.balance >= amount);
         owner.transfer(amount);
     }
-
     //============================ ORACLIZE ===========================================
 
     // /**
