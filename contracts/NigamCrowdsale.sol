@@ -15,13 +15,13 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     uint256   public preSale1_startTimestamp;       //when Presale 1 started uint256 public
     uint256   public preSale1BasePrice;             //price in cents
     uint256   public preSale1DollarHardCap;         //hard cap for Round 1 presale in ether  
-    uint256   public preSale1EthCollected;          //how much ether already collected at pre-sale 1
+    uint256   public preSale1WeiCollected;          //how much wei already collected at pre-sale 1
     uint256   public preSale1_endTimestamp;         //when Presale 1 ends uint256 public
 
     uint256   public preSale2_startTimestamp;       //when Presale 2 started uint256 public
     uint256   public preSale2BasePrice;             //price in cents
     uint256   public preSale2DollarHardCap;         //hard cap for Round 2 presale in ether  
-    uint256   public preSale2EthCollected;          //how much ether already collected at pre-sale 2
+    uint256   public preSale2WeiCollected;          //how much wei already collected at pre-sale 2
     uint256   public preSale2_endTimestamp;         //when Presale 2 ends uint256 public
 
     uint256   public ICO_startTimestamp;            //when ICO sale started uint256 public
@@ -29,7 +29,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     uint32    public priceIncreaseInterval;         //seconds before price increase uint32
     uint32    public priceIncreaseAmount;           //amount to increase price to (in cents)
     uint256   public ICO_DollarHardCap;             //hard cap for the main sale round in ether
-    uint256   public ICO_EthCollected;              //how much ether already collected at main sale
+    uint256   public ICO_WeiCollected;              //how much wei already collected at main sale
     uint256   public ICO_endTimestamp;              //when Presale 2 ends uint256 public
 
     uint256   public saleStartTimestamp;            //when sale started uint256 public
@@ -97,11 +97,11 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         token.mint(owner, ownerTokens);
         TokenPurchase(msg.sender, msg.value, buyerTokens);    //event for TokenPurchase
         if (state == State.FirstPreSale) {
-            preSale1EthCollected = preSale1EthCollected.add(msg.value);
+            preSale1WeiCollected = preSale1WeiCollected.add(msg.value);
         }else if (state == State.SecondPreSale) {
-            preSale2EthCollected = preSale2EthCollected.add(msg.value);
+            preSale2WeiCollected = preSale2WeiCollected.add(msg.value);
         }else if (state == State.ICO) {
-            ICO_EthCollected = ICO_EthCollected.add(msg.value);
+            ICO_WeiCollected = ICO_WeiCollected.add(msg.value);
         }
         if ( hardCapReached(state) ){
             state = State.Paused;
@@ -197,11 +197,11 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
     }
     function hardCapReached(State state) constant returns(bool){
         if(state == State.FirstPreSale) {
-            return preSale1EthCollected >= preSale1DollarHardCap.div(ethPrice);
+            return preSale1WeiCollected >= preSale1DollarHardCap.mul(1000000000000000000).div(ethPrice);
         }else if(state == State.SecondPreSale) {
-            return preSale2EthCollected >= preSale2DollarHardCap.div(ethPrice);
+            return preSale2WeiCollected >= preSale2DollarHardCap.mul(1000000000000000000).div(ethPrice);
         }else if(state == State.ICO){
-            return ICO_EthCollected >= ICO_DollarHardCap.div(ethPrice);    
+            return ICO_WeiCollected >= ICO_DollarHardCap.mul(1000000000000000000).div(ethPrice);    
         }else {
             return false;
         }
