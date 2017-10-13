@@ -1,15 +1,15 @@
 pragma solidity ^0.4.0;
 
 import './zeppelin/ownership/Ownable.sol';
-// import './oraclize/oraclizeAPI.sol';
+import './oraclize/oraclizeAPI.sol';
 import './NigamCoin.sol';
 
-contract NigamCrowdsale is Ownable, HasNoTokens {
+contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
     using SafeMath for uint256;
     using SafeMath for uint8;
 
     NigamCoin public token;                         //token for crowdsale
-    uint256   public constant ethPrice = 300;       //ETHUSD price in $0.01 USD, will be set by Oraclize, example: if 1 ETH = 295.14000 USD, then ethPrice = 29514
+    uint256   public ethPrice;                      //ETHUSD price in $0.01 USD, will be set by Oraclize, example: if 1 ETH = 295.14000 USD, then ethPrice = 29514
     uint256   public amountRaised;                  //total amount raised in wei
 
     uint256   public preSale1_startTimestamp;       //when Presale 1 started uint256 public
@@ -128,7 +128,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         } else if(state == State.SecondPreSale) {
             rate = calculatePreSaleTwoRate(etherAmount, preSale2BasePrice);
         } else if(state == State.ICO){
-            rate = calculateICOrate();
+            rate = calculateICOrate(ICO_basePrice);
         } else {
             revert();   //state is wrong
         }
@@ -187,11 +187,11 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         return rate;
     }
 
-    function calculateICOrate() constant returns(uint256){
+    function calculateICOrate(uint256 basePrice) constant returns(uint256){
         if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
         uint256 passedIntervals = saleRunningSeconds / priceIncreaseInterval; //remainder will be discarded
-        uint256 price = ICO_basePrice.add( passedIntervals.mul(priceIncreaseAmount) );
+        uint256 price = basePrice.add( passedIntervals.mul(priceIncreaseAmount) );
         uint256 rate = ethPrice.div(price).mul(100);   //calculate initial # tokens for ETH sent, convert from cents
         return rate;
     }
@@ -234,42 +234,42 @@ contract NigamCrowdsale is Ownable, HasNoTokens {
         require(this.balance >= amount);
         owner.transfer(amount);
     }
-    //============================ ORACLIZE ===========================================
+    /*============================ ORACLIZE ===========================================*/
 
-    // /**
-    // * @notice Owner can change price update interval
-    // * @param newOraclizeUpdateInterval Update interval in seconds. Zero will stop updates.
-    // */
-    // function updateInterval(uint32 newOraclizeUpdateInterval) public onlyOwner {
-    //     if(oraclizeUpdateInterval == 0 && newOraclizeUpdateInterval > 0){
-    //         oraclizeUpdateInterval = newOraclizeUpdateInterval;
-    //         updateEthPriceInternal();
-    //     }else{
-    //         oraclizeUpdateInterval = newOraclizeUpdateInterval;
-    //     }
-    // }
-    // /**
-    // * @notice Owner can do this to start price updates
-    // * Also, he can put some ether to the contract so that it can pay for the updates
-    // */
-    // function updateEthPrice() public payable onlyOwner{
-    //     updateEthPriceInternal();
-    // }
-    // /**
-    // * @dev Callback for Oraclize
-    // */
-    // function __callback(bytes32 myid, string result, bytes proof) {
-    //     require(msg.sender == oraclize_cbAddress());
-    //     ethPrice = parseInt(result, 2);      //2 makes ethPrice to be price in 0.01 USD
-    //    ethPrice = ethPrice.div(100);      //makes ethPrice to be price in 1 USD        
-    //     EthPriceUpdate(ethPrice);            //Event for ETH Price Update
-    //     if(oraclizeUpdateInterval > 0){
-    //         updateEthPriceInternal();
-    //     }
-    // }
-    // function updateEthPriceInternal() internal {
-    //     oraclize_query(oraclizeUpdateInterval, "URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
-    // }
+    /**
+    * @notice Owner can change price update interval
+    * @param newOraclizeUpdateInterval Update interval in seconds. Zero will stop updates.
+    */
+    function updateInterval(uint32 newOraclizeUpdateInterval) public onlyOwner {
+        if(oraclizeUpdateInterval == 0 && newOraclizeUpdateInterval > 0){
+            oraclizeUpdateInterval = newOraclizeUpdateInterval;
+            updateEthPriceInternal();
+        }else{
+            oraclizeUpdateInterval = newOraclizeUpdateInterval;
+        }
+    }
+    /**
+    * @notice Owner can do this to start price updates
+    * Also, he can put some ether to the contract so that it can pay for the updates
+    */
+    function updateEthPrice() public payable onlyOwner{
+        updateEthPriceInternal();
+    }
+    /**
+    * @dev Callback for Oraclize
+    */
+    function __callback(bytes32 myid, string result, bytes proof){
+        require(msg.sender == oraclize_cbAddress());
+        ethPrice = parseInt(result, 10);      //2 makes ethPrice to be price in 0.01 USD
+        // ethPrice = ethPrice.div(100);      //makes ethPrice to be price in 1 USD        
+        EthPriceUpdate(ethPrice);            //Event for ETH Price Update
+        if(oraclizeUpdateInterval > 0){
+            updateEthPriceInternal();
+        }
+    }
+    function updateEthPriceInternal() internal {
+        oraclize_query(oraclizeUpdateInterval, "URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
+    }
 }
 
 
