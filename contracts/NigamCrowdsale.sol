@@ -1,14 +1,15 @@
 pragma solidity ^0.4.0;
 
 import './zeppelin/ownership/Ownable.sol';
-import './oraclize/oraclizeAPI.sol';
+// import './oraclize/oraclizeAPI.sol';
 import './NigamCoin.sol';
 
-contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
+contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
     using SafeMath for uint256;
     using SafeMath for uint8;
 
     NigamCoin public token;                         //token for crowdsale
+    string    public ETHUSD;                        //string returned from Oraclize
     uint256   public ethPrice;                      //ETHUSD price in $0.01 USD, will be set by Oraclize, example: if 1 ETH = 295.14000 USD, then ethPrice = 29514
     uint256   public amountRaised;                  //total amount raised in wei
 
@@ -26,13 +27,10 @@ contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
 
     uint256   public ICO_startTimestamp;            //when ICO sale started uint256 public
     uint256   public ICO_basePrice;                 //price in cents uint32  public
-    uint32    public priceIncreaseInterval;         //seconds before price increase uint32
-    uint32    public priceIncreaseAmount;           //amount to increase price to (in cents)
     uint256   public ICO_DollarHardCap;             //hard cap for the main sale round in ether
     uint256   public ICO_WeiCollected;              //how much wei already collected at main sale
     uint256   public ICO_endTimestamp;              //when Presale 2 ends uint256 public
 
-    uint256   public saleStartTimestamp;            //when sale started uint256 public
     uint8     public ownersPercent;                 //percent of tokens that will be minted to owner during the sale
 
     enum State { Paused, FirstPreSale, SecondPreSale, ICO, Finished }
@@ -47,7 +45,8 @@ contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
     * @param newEthPrice new price of eth in points, where 1 point = 0.00001 USD
     */
     event EthPriceUpdate(uint256 newEthPrice);
-
+    // event newOraclizeQuery(string description);
+    event newKrakenPriceTicker(string price);
     /**
     * event for token purchase logging
     * @param purchaser who paid for the tokens
@@ -57,30 +56,27 @@ contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
     event TokenPurchase(address indexed purchaser, uint256 value, uint256 amount);
 
 
-    function NigamCrowdsale( 
+    function NigamCrowdsale(uint256 _ethPrice,
         uint256 _preSale1BasePrice, uint256 _preSale1DollarHardCap,
         uint256 _preSale2BasePrice, uint256 _preSale2DollarHardCap,
-        uint256 _ICO_basePrice, uint256 _ICO_DollarHardCap, uint32 _priceIncreaseInterval, uint32 _priceIncreaseAmount,
+        uint256 _ICO_basePrice, uint256 _ICO_DollarHardCap,
         uint8 _ownersPercent
         ){
         state = State.Paused;
 
-        preSale1BasePrice = _preSale1BasePrice;             //0.0016667 or 1/600 ETH
-        preSale1DollarHardCap = _preSale1DollarHardCap;           //1666.67 ether;
+        preSale1BasePrice = _preSale1BasePrice;             
+        preSale1DollarHardCap = _preSale1DollarHardCap;          
 
-        preSale2BasePrice = _preSale2BasePrice;             //0.0025 or 1/400 ETH;
-        preSale2DollarHardCap = _preSale2DollarHardCap;                   //16666.67 ether;
+        preSale2BasePrice = _preSale2BasePrice;             
+        preSale2DollarHardCap = _preSale2DollarHardCap;                   
 
-        ICO_basePrice = _ICO_basePrice;                         //0.003333 or 1/300 ETH;
-        priceIncreaseInterval = _priceIncreaseInterval;   //24*60*60; //1 day
-        priceIncreaseAmount = _priceIncreaseAmount;     //0.00066667 or 1/1500 ETH;
-        ICO_DollarHardCap = _ICO_DollarHardCap;                       //166666.67 ether;
+        ICO_basePrice = _ICO_basePrice;                        
+        ICO_DollarHardCap = _ICO_DollarHardCap;                      
 
+        ethPrice = _ethPrice;
         ownersPercent = _ownersPercent;   //whole number that will be divided by 100 later
 
-        token = new NigamCoin();        //creating token in constructor so that separate token contract doesn't need to be published
-        // token = _token;
-        // assert(token.delegatecall( bytes4(keccak256("transferOwnership(address)")), this));   //delegate call to transfer ownership of token to crowdsale contract
+        token = new NigamCoin();        //creating token in constructor
     }
 
     /**
@@ -92,10 +88,10 @@ contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
         uint256 rate = currentRate(msg.value);
         assert(rate > 0);
         uint256 buyerTokens = rate.mul(msg.value);
-        uint256 ownerTokens = buyerTokens.mul(ownersPercent).div(100); //ownersPercent is percents, so divide to 100
+        uint256 ownerTokens = buyerTokens.mul(ownersPercent).div(100);  //convert ownersPercent to percent by dividing it by 100
         token.mint(msg.sender, buyerTokens);
         token.mint(owner, ownerTokens);
-        TokenPurchase(msg.sender, msg.value, buyerTokens);    //event for TokenPurchase
+        TokenPurchase(msg.sender, msg.value, buyerTokens);              //event for TokenPurchase
         if (state == State.FirstPreSale) {
             preSale1WeiCollected = preSale1WeiCollected.add(msg.value);
         }else if (state == State.SecondPreSale) {
@@ -128,73 +124,170 @@ contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
         } else if(state == State.SecondPreSale) {
             rate = calculatePreSaleTwoRate(etherAmount, preSale2BasePrice);
         } else if(state == State.ICO){
-            rate = calculateICOrate(ICO_basePrice);
+            rate = calculateICOrate(etherAmount, ICO_basePrice);
         } else {
             revert();   //state is wrong
         }
         return rate;
     }
+
     function calculatePreSaleOneRate(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
-        require(etherAmount >= 2 ether);         //minimum contribution 2 ETH
-        uint8 bonusPercentage;
-        uint256 rate = ethPrice.div(basePrice).mul(100);  //calculate initial # tokens for ETH sent, convert to cents
-        if(etherAmount >= 7 ether) {           //100 ETH
-            bonusPercentage = 50;                //50% of baseTokens awarded
-        }
-        else if(etherAmount >= 6 ether) {            //25 ETH
-            bonusPercentage = 25;                //25% of baseTokens awarded
-        }
-        else if(etherAmount >= 5 ether) {            //15 ETH 
-            bonusPercentage = 15;                //15% of baseTokens awarded
-        }
-        else if(etherAmount >= 4 ether) {            //10 ETH 
-            bonusPercentage = 10;                //10% of baseTokens awarded
-        }
-        else if(etherAmount >= 3 ether) {             //4 ETH 
-            bonusPercentage = 5;                 //5% of baseTokens awarded
-        }
-        else {
-            bonus = 0;                           //no bonus for anything less than 4 ETH
-        }      
-        uint256 bonus = rate.mul(bonusPercentage);   
-        rate = rate.add( bonus.div(100) );      //add only the perecentage of bonus (divide by 100)
+        require(etherAmount >= 100 finney);                   //minimum contribution 0.1 ETH
+        uint8 bonusPercentage = 75;                           //75% of baseTokens awarded as bonus
+        uint256 rate = ethPrice.div(basePrice).mul(100);      //convert basePrice from cents, calculate base rate (CRD/ETH)
+        uint256 bonus = rate.mul(bonusPercentage).div(100);   //divide by 100 to convert bonusPercentage to percent 
+        rate = rate.add(bonus);                               //add bonus tokens to base rate
         return rate;
     }
 
     function calculatePreSaleTwoRate(uint256 etherAmount, uint256 basePrice) constant returns(uint256) {
-        uint8 bonusPercentage;        
-        uint256 rate = ethPrice.div(basePrice).mul(100);  //calculate initial # tokens for ETH sent, convert to cents
-        if(etherAmount >= 5 ether) {         //10000 ETH
-            bonusPercentage = 25;                //25% of baseTokens awarded
+        require(etherAmount >= 100 finney);                 //minimum contribution 0.1 ETH
+        uint8 bonusPercentage;                              //bonus percent of tokens awarded for ETH sent
+        uint256 rate = ethPrice.div(basePrice).mul(100);    //convert basePrice from cents, calculate base rate (CRD/ETH)
+        uint256 dollarAmount = etherAmount.mul(ethPrice).div(1000000000000000000);   //dollarAmount sent to contract
+        if(dollarAmount >= 500000) {                //$500,000
+            bonusPercentage = 50;                   //50% of baseTokens awarded
         }
-        else if(etherAmount >= 4 ether) {         //5000 ETH
-            bonusPercentage = 8;                //8% of baseTokens awarded
+        else if(dollarAmount >= 400000) {           //$400,000
+            bonusPercentage = 45;                   //45% of baseTokens awarded
         }
-        else if(etherAmount >= 3 ether) {         //2500 ETH 
-            bonusPercentage = 5;                //5% of baseTokens awarded
+        else if(dollarAmount >= 300000) {           //$300,000
+            bonusPercentage = 40;                   //40% of baseTokens awarded
         }
-        else if(etherAmount >= 2 ether) {         //1000 ETH 
-            bonusPercentage = 3;                //3% of baseTokens awarded
+        else if(dollarAmount >= 200000) {           //$200,000
+            bonusPercentage = 35;                   //35% of baseTokens awarded
         }
-        else if(etherAmount >= 1 ether) {          //500 ETH 
-            bonusPercentage = 1;                //1% of baseTokens awarded
+        else if(dollarAmount >= 100000) {           //$100,000
+            bonusPercentage = 30;                   //30% of baseTokens awarded
+        }
+        else if(dollarAmount >= 50000) {            //$50,000
+            bonusPercentage = 29;                   //29% of baseTokens awarded
+        }
+        else if(dollarAmount >= 40000) {            //$40,000
+            bonusPercentage = 28;                   //28% of baseTokens awarded
+        }
+        else if(dollarAmount >= 30000) {            //$30,000
+            bonusPercentage = 27;                   //27% of baseTokens awarded
+        }
+        else if(dollarAmount >= 20000) {            //$20,000
+            bonusPercentage = 26;                   //26% of baseTokens awarded
+        }
+        else if(dollarAmount >= 10000) {            //$10,000
+            bonusPercentage = 25;                   //25% of baseTokens awarded
         }
         else {
-            bonus = 0;                       //no bonus for anything less than 4 ETH
+            bonus = 0;                              //no bonus for anything less than $10,000
         }               
-        uint256 bonus = rate.mul(bonusPercentage);   
-        rate = rate.add( bonus.div(100) );      //add only the perecentage of bonus (divide by 100)
+        uint256 bonus = rate.mul(bonusPercentage).div(100);   //divide by 100 to convert bonusPercentage to percent 
+        rate = rate.add(bonus);                               //add bonus tokens to base rate
         return rate;
     }
 
-    function calculateICOrate(uint256 basePrice) constant returns(uint256){
+    function calculateICOrate(uint256 etherAmount, uint256 basePrice) constant returns(uint256){
         if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
+        require(etherAmount >= 100 finney);                         //minimum contribution 0.1 ETH
+        uint256 rate = ethPrice.div(basePrice).mul(100);            //calculate initial # tokens for ETH sent, convert to cents
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
-        uint256 passedIntervals = saleRunningSeconds / priceIncreaseInterval; //remainder will be discarded
-        uint256 price = basePrice.add( passedIntervals.mul(priceIncreaseAmount) );
-        uint256 rate = ethPrice.div(price).mul(100);   //calculate initial # tokens for ETH sent, convert from cents
+        uint256 daysPassed = saleRunningSeconds / 86400;      //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
+        uint256 bonusPercentage;
+        if(daysPassed <= 1) {                
+            bonusPercentage = 2500;                   //25% of baseTokens awarded
+        }
+        else if(daysPassed <= 2) {           
+            bonusPercentage = 2400;                   //24% of baseTokens awarded
+        }
+        else if(daysPassed <= 3) {          
+            bonusPercentage = 2300;                   //23% of baseTokens awarded
+        }
+        else if(daysPassed <= 4) {           
+            bonusPercentage = 2200;                   //22% of baseTokens awarded
+        }
+        else if(daysPassed <= 5) {           
+            bonusPercentage = 2100;                   //21% of baseTokens awarded
+        }
+        else if(daysPassed <= 6) {            
+            bonusPercentage = 2000;                   //20% of baseTokens awarded
+        }
+        else if(daysPassed <= 7) {            
+            bonusPercentage = 1900;                   //19% of baseTokens awarded
+        }
+        else if(daysPassed <= 8) {            
+            bonusPercentage = 1800;                   //18% of baseTokens awarded
+        }
+        else if(daysPassed <= 9) {            
+            bonusPercentage = 1700;                   //17% of baseTokens awarded
+        }
+        else if(daysPassed <= 10) {            
+            bonusPercentage = 1600;                   //16% of baseTokens awarded
+        }
+        else if(daysPassed <= 11) {           
+            bonusPercentage = 1500;                   //15% of baseTokens awarded
+        }
+        else if(daysPassed <= 12) {           
+            bonusPercentage = 1400;                   //14% of baseTokens awarded
+        }
+        else if(daysPassed <= 13) {           
+            bonusPercentage = 1300;                   //13% of baseTokens awarded
+        }
+        else if(daysPassed <= 14) {           
+            bonusPercentage = 1200;                   //12% of baseTokens awarded
+        }
+        else if(daysPassed <= 15) {            
+            bonusPercentage = 1100;                   //11% of baseTokens awarded
+        }
+        else if(daysPassed <= 16) {            
+            bonusPercentage = 1000;                   //10% of baseTokens awarded
+        }
+        else if(daysPassed <= 17) {            
+            bonusPercentage = 900;                    //9% of baseTokens awarded
+        }
+        else if(daysPassed <= 18) {            
+            bonusPercentage = 800;                    //8% of baseTokens awarded
+        }
+        else if(daysPassed <= 19) {            
+            bonusPercentage = 700;                    //7% of baseTokens awarded
+        }
+        else if(daysPassed <= 20) {          
+            bonusPercentage = 600;                    //6% of baseTokens awarded
+        }
+        else if(daysPassed <= 21) {           
+            bonusPercentage = 500;                    //5% of baseTokens awarded
+        }
+        else if(daysPassed <= 22) {           
+            bonusPercentage = 400;                    //4% of baseTokens awarded
+        }
+        else if(daysPassed <= 23) {           
+            bonusPercentage = 300;                    //3% of baseTokens awarded
+        }
+        else if(daysPassed <= 24) {            
+            bonusPercentage = 200;                    //2% of baseTokens awarded
+        }
+        else if(daysPassed <= 25) {            
+            bonusPercentage = 100;                    //1% of baseTokens awarded
+        }
+        else if(daysPassed <= 26) {            
+            bonusPercentage = 75;                     //0.75% of baseTokens awarded
+        }
+        else if(daysPassed <= 27) {            
+            bonusPercentage = 50;                     //0.50% of baseTokens awarded
+        }
+        else if(daysPassed <= 28) {            
+            bonusPercentage = 25;                     //0.25% of baseTokens awarded
+        }
+        else if(daysPassed <= 29) {            
+            bonusPercentage = 10;                     //0.10% of baseTokens awarded
+        }
+        else if(daysPassed <= 30) {            
+            bonusPercentage = 5;                      //0.05% of baseTokens awarded
+        }
+        else {
+            bonus = 0;                                //no bonus for anything less than $10,000
+        }               
+        uint256 bonus = rate.mul(bonusPercentage).div(10000);   //divide by 10,000 to convert bonusPercentage to percent 
+        rate = rate.add(bonus);                               //add bonus tokens to base rate
         return rate;
     }
+
     function hardCapReached(State _state) constant returns(bool){
         if(_state == State.FirstPreSale) {
             return preSale1WeiCollected >= preSale1DollarHardCap.mul(1000000000000000000).div(ethPrice);
@@ -236,40 +329,43 @@ contract NigamCrowdsale is Ownable, HasNoTokens, usingOraclize {
     }
     /*============================ ORACLIZE ===========================================*/
 
-    /**
-    * @notice Owner can change price update interval
-    * @param newOraclizeUpdateInterval Update interval in seconds. Zero will stop updates.
-    */
-    function updateInterval(uint32 newOraclizeUpdateInterval) public onlyOwner {
-        if(oraclizeUpdateInterval == 0 && newOraclizeUpdateInterval > 0){
-            oraclizeUpdateInterval = newOraclizeUpdateInterval;
-            updateEthPriceInternal();
-        }else{
-            oraclizeUpdateInterval = newOraclizeUpdateInterval;
-        }
-    }
-    /**
-    * @notice Owner can do this to start price updates
-    * Also, he can put some ether to the contract so that it can pay for the updates
-    */
-    function updateEthPrice() public payable onlyOwner{
-        updateEthPriceInternal();
-    }
-    /**
-    * @dev Callback for Oraclize
-    */
-    function __callback(bytes32 myid, string result, bytes proof){
-        require(msg.sender == oraclize_cbAddress());
-        ethPrice = parseInt(result, 10);      //2 makes ethPrice to be price in 0.01 USD
-        // ethPrice = ethPrice.div(100);      //makes ethPrice to be price in 1 USD        
-        EthPriceUpdate(ethPrice);            //Event for ETH Price Update
-        if(oraclizeUpdateInterval > 0){
-            updateEthPriceInternal();
-        }
-    }
-    function updateEthPriceInternal() internal {
-        oraclize_query(oraclizeUpdateInterval, "URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
-    }
+    // /**
+    // * @notice Owner can change price update interval
+    // * @param newOraclizeUpdateInterval Update interval in seconds. Zero will stop updates.
+    // */
+    // function updateInterval(uint32 newOraclizeUpdateInterval) public onlyOwner {
+    //     if(oraclizeUpdateInterval == 0 && newOraclizeUpdateInterval > 0){
+    //         oraclizeUpdateInterval = newOraclizeUpdateInterval;
+    //         updateEthPriceInternal();
+    //     }else{
+    //         oraclizeUpdateInterval = newOraclizeUpdateInterval;
+    //     }
+    // }
+    // /**
+    // * @notice Owner can do this to start price updates
+    // * Also, he can put some ether to the contract so that it can pay for the updates
+    // */
+    // function updateEthPrice() public payable onlyOwner{
+    //     oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
+    //     updateEthPriceInternal();
+    // }
+    // /**
+    // * @dev Callback for Oraclize
+    // */
+    // function __callback(bytes32 myid, string result, bytes proof){
+    //     require(msg.sender == oraclize_cbAddress());
+    //     ETHUSD = result;
+    //     newKrakenPriceTicker(ETHUSD);
+    //     // ethPrice = parseInt(ETHUSD, 10);      //2nd argument needs to be the radix, 2 makes ethPrice to be price in 0.01 USD
+    //     // ethPrice = ethPrice.div(100);      //makes ethPrice to be price in 1 USD        
+    //     // EthPriceUpdate(ethPrice);            //Event for ETH Price Update
+    //     if(oraclizeUpdateInterval > 0){
+    //         updateEthPriceInternal();
+    //     }
+    // }
+    // function updateEthPriceInternal() internal {
+    //     oraclize_query(oraclizeUpdateInterval, "URL", "json(https://api.kraken.com/0/public/Ticker?pair=ETHUSD).result.XETHZUSD.c.0");
+    // }
 }
 
 

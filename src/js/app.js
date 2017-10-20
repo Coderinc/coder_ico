@@ -34,14 +34,15 @@ jQuery(document).ready(function($) {
         $('input[name="startTimePresale1"]', form).val(d.toISOString());
         d = new Date(nowTimestamp+2*60*60*1000);
         $('input[name="endTimePresale1"]', form).val(d.toISOString());
-        $('input[name="preSale1BasePrice"]', form).val(50);
+        $('input[name="preSale1BasePrice"]', form).val(100);
         $('input[name="preSale1DollarHardCap"]', form).val(500000);
-        $('input[name="preSale2BasePrice"]', form).val(75);
+        $('input[name="preSale2BasePrice"]', form).val(100);
         $('input[name="preSale2DollarHardCap"]', form).val(5000000);
         $('input[name="ICO_basePrice"]', form).val(100);
         $('input[name="ICO_DollarHardCap"]', form).val(50000000);
-        $('input[name="priceIncreaseInterval"]', form).val(60*60*24);
-        $('input[name="priceIncreaseAmount"]', form).val(20);
+        // $('input[name="priceIncreaseInterval"]', form).val(60*60*24);
+        // $('input[name="priceIncreaseAmount"]', form).val(20);
+        $('input[name="ethPrice"]', form).val(300);
         $('input[name="ownersPercent"]', form).val(10);
 
         setInterval(function(){$('#clock').val( (new Date()).toISOString() )}, 1000);
@@ -85,12 +86,13 @@ jQuery(document).ready(function($) {
         let preSale2DollarHardCap = $('input[name="preSale2DollarHardCap"]', form).val();
         let ICO_basePrice = $('input[name="ICO_basePrice"]', form).val();
         let ICO_DollarHardCap = $('input[name="ICO_DollarHardCap"]', form).val();
-        let priceIncreaseInterval = $('input[name="priceIncreaseInterval"]', form).val();
-        let priceIncreaseAmount = $('input[name="priceIncreaseAmount"]', form).val();          
+        let ethPrice = $('input[name="ethPrice"]', form).val();        
+        // let priceIncreaseInterval = $('input[name="priceIncreaseInterval"]', form).val();
+        // let priceIncreaseAmount = $('input[name="priceIncreaseAmount"]', form).val();          
         let ownersPercent  = $('input[name="ownersPercent"]', form).val();
 
         publishContract(crowdsaleContract, 
-            [preSale1BasePrice, preSale1DollarHardCap, preSale2BasePrice, preSale2DollarHardCap, ICO_basePrice, ICO_DollarHardCap, priceIncreaseInterval, priceIncreaseAmount, ownersPercent],
+            [ethPrice, preSale1BasePrice, preSale1DollarHardCap, preSale2BasePrice, preSale2DollarHardCap, ICO_basePrice, ICO_DollarHardCap, /*priceIncreaseInterval, priceIncreaseAmount, */ownersPercent],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
             }, 
@@ -118,6 +120,10 @@ jQuery(document).ready(function($) {
         crowdsaleInstance.preSale1_startTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="startTimePresale1"]', form).val(timestampToString(result));
+        });
+        crowdsaleInstance.ethPrice(function(error, result){
+            if(!!error) console.log('Contract info loading error:\n', error);
+            $('input[name="ethPrice"]', form).val(result);
         });
         crowdsaleInstance.preSale1_endTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
