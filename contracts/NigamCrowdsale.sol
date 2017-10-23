@@ -11,7 +11,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
     NigamCoin public token;                         //token for crowdsale
     string    public ETHUSD;                        //string returned from Oraclize
     uint256   public ethPrice;                      //ETHUSD price in $0.01 USD, will be set by Oraclize, example: if 1 ETH = 295.14000 USD, then ethPrice = 29514
-    uint256   public amountRaised;                  //total amount raised in wei
+    uint256   public totalEthRaised;                  //total ETH amount raised
 
     uint256   public preSale1_startTimestamp;       //when Presale 1 started uint256 public
     uint256   public preSale1BasePrice;             //price in cents
@@ -30,6 +30,8 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
     uint256   public ICO_DollarHardCap;             //hard cap for the main sale round in ether
     uint256   public ICO_WeiCollected;              //how much wei already collected at main sale
     uint256   public ICO_endTimestamp;              //when Presale 2 ends uint256 public
+    uint256   public bonusDecreaseInterval;         //seconds before bonus decreases uint32
+    uint256   public daysPassed;                    //days passed since ICO start datetime (86,400 sec intervals)
 
     uint8     public ownersPercent;                 //percent of tokens that will be minted to owner during the sale
 
@@ -59,10 +61,12 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
     function NigamCrowdsale(uint256 _ethPrice,
         uint256 _preSale1BasePrice, uint256 _preSale1DollarHardCap,
         uint256 _preSale2BasePrice, uint256 _preSale2DollarHardCap,
-        uint256 _ICO_basePrice, uint256 _ICO_DollarHardCap,
+        uint256 _ICO_basePrice, uint256 _ICO_DollarHardCap, uint256 _bonusDecreaseInterval,
         uint8 _ownersPercent
         ){
         state = State.Paused;
+
+        ethPrice = _ethPrice;
 
         preSale1BasePrice = _preSale1BasePrice;             
         preSale1DollarHardCap = _preSale1DollarHardCap;          
@@ -72,11 +76,10 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
 
         ICO_basePrice = _ICO_basePrice;                        
         ICO_DollarHardCap = _ICO_DollarHardCap;                      
+        bonusDecreaseInterval = _bonusDecreaseInterval;
 
-        ethPrice = _ethPrice;
-        ownersPercent = _ownersPercent;   //whole number that will be divided by 100 later
-
-        token = new NigamCoin();        //creating token in constructor
+        ownersPercent = _ownersPercent;     //whole number that will be divided by 100 later
+        token = new NigamCoin();            //creating token in constructor
     }
 
     /**
@@ -124,7 +127,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
         } else if(state == State.SecondPreSale) {
             rate = calculatePreSaleTwoRate(etherAmount, preSale2BasePrice);
         } else if(state == State.ICO){
-            rate = calculateICOrate(etherAmount, ICO_basePrice);
+            rate = calculateICOrate(etherAmount, ICO_basePrice, bonusDecreaseInterval);
         } else {
             revert();   //state is wrong
         }
@@ -145,34 +148,34 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
         uint8 bonusPercentage;                              //bonus percent of tokens awarded for ETH sent
         uint256 rate = ethPrice.div(basePrice).mul(100);    //convert basePrice from cents, calculate base rate (CRD/ETH)
         uint256 dollarAmount = etherAmount.mul(ethPrice).div(1000000000000000000);   //dollarAmount sent to contract
-        if(dollarAmount >= 500000) {                //$500,000
+        if(dollarAmount >= 500) {                //$500,000
             bonusPercentage = 50;                   //50% of baseTokens awarded
         }
-        else if(dollarAmount >= 400000) {           //$400,000
+        else if(dollarAmount >= 400) {           //$400,000
             bonusPercentage = 45;                   //45% of baseTokens awarded
         }
-        else if(dollarAmount >= 300000) {           //$300,000
+        else if(dollarAmount >= 300) {           //$300,000
             bonusPercentage = 40;                   //40% of baseTokens awarded
         }
-        else if(dollarAmount >= 200000) {           //$200,000
+        else if(dollarAmount >= 200) {           //$200,000
             bonusPercentage = 35;                   //35% of baseTokens awarded
         }
-        else if(dollarAmount >= 100000) {           //$100,000
+        else if(dollarAmount >= 100) {           //$100,000
             bonusPercentage = 30;                   //30% of baseTokens awarded
         }
-        else if(dollarAmount >= 50000) {            //$50,000
+        else if(dollarAmount >= 80) {            //$50,000
             bonusPercentage = 29;                   //29% of baseTokens awarded
         }
-        else if(dollarAmount >= 40000) {            //$40,000
+        else if(dollarAmount >= 70) {            //$40,000
             bonusPercentage = 28;                   //28% of baseTokens awarded
         }
-        else if(dollarAmount >= 30000) {            //$30,000
+        else if(dollarAmount >= 60) {            //$30,000
             bonusPercentage = 27;                   //27% of baseTokens awarded
         }
-        else if(dollarAmount >= 20000) {            //$20,000
+        else if(dollarAmount >= 50) {            //$20,000
             bonusPercentage = 26;                   //26% of baseTokens awarded
         }
-        else if(dollarAmount >= 10000) {            //$10,000
+        else if(dollarAmount >= 40) {            //$10,000
             bonusPercentage = 25;                   //25% of baseTokens awarded
         }
         else {
@@ -183,102 +186,102 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
         return rate;
     }
 
-    function calculateICOrate(uint256 etherAmount, uint256 basePrice) constant returns(uint256){
+    function calculateICOrate(uint256 etherAmount, uint256 basePrice, uint256 bonusDecreaseInterval) constant returns(uint256){
         if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
-        require(etherAmount >= 100 finney);                         //minimum contribution 0.1 ETH
-        uint256 rate = ethPrice.div(basePrice).mul(100);            //calculate initial # tokens for ETH sent, convert to cents
+        require(etherAmount >= 100 finney);                             //minimum contribution 0.1 ETH
+        uint256 rate = ethPrice.div(basePrice).mul(100);                //calculate initial # tokens for ETH sent, convert to cents
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
-        uint256 daysPassed = saleRunningSeconds / 86400;      //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
-        uint256 bonusPercentage;
-        if(daysPassed <= 1) {                
-            bonusPercentage = 2500;                   //25% of baseTokens awarded
+        daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);     //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
+        uint256 bonusPercentage;                                        //bonus percent of tokens handed per ETH received
+        if(daysPassed <= 0) {                
+            bonusPercentage = 2500;                   //Day1 - 25% of baseTokens awarded
         }
-        else if(daysPassed <= 2) {           
-            bonusPercentage = 2400;                   //24% of baseTokens awarded
+        else if(daysPassed <= 1) {           
+            bonusPercentage = 2400;                   //Day2 - 24% of baseTokens awarded
         }
-        else if(daysPassed <= 3) {          
-            bonusPercentage = 2300;                   //23% of baseTokens awarded
+        else if(daysPassed <= 2) {          
+            bonusPercentage = 2300;                   //Day3 - 23% of baseTokens awarded
+        }
+        else if(daysPassed <= 3) {           
+            bonusPercentage = 2200;                   //Day4 - 22% of baseTokens awarded
         }
         else if(daysPassed <= 4) {           
-            bonusPercentage = 2200;                   //22% of baseTokens awarded
+            bonusPercentage = 2100;                   //Day5 - 21% of baseTokens awarded
         }
-        else if(daysPassed <= 5) {           
-            bonusPercentage = 2100;                   //21% of baseTokens awarded
+        else if(daysPassed <= 5) {            
+            bonusPercentage = 2000;                   //Day6 - 20% of baseTokens awarded
         }
         else if(daysPassed <= 6) {            
-            bonusPercentage = 2000;                   //20% of baseTokens awarded
+            bonusPercentage = 1900;                   //Day7 - 19% of baseTokens awarded
         }
         else if(daysPassed <= 7) {            
-            bonusPercentage = 1900;                   //19% of baseTokens awarded
+            bonusPercentage = 1800;                   //Day8 - 18% of baseTokens awarded
         }
         else if(daysPassed <= 8) {            
-            bonusPercentage = 1800;                   //18% of baseTokens awarded
+            bonusPercentage = 1700;                   //Day9 - 17% of baseTokens awarded
         }
         else if(daysPassed <= 9) {            
-            bonusPercentage = 1700;                   //17% of baseTokens awarded
+            bonusPercentage = 1600;                   //Day10 - 16% of baseTokens awarded
         }
-        else if(daysPassed <= 10) {            
-            bonusPercentage = 1600;                   //16% of baseTokens awarded
+        else if(daysPassed <= 10) {           
+            bonusPercentage = 1500;                   //Day11 - 15% of baseTokens awarded
         }
         else if(daysPassed <= 11) {           
-            bonusPercentage = 1500;                   //15% of baseTokens awarded
+            bonusPercentage = 1400;                   //Day12 - 14% of baseTokens awarded
         }
         else if(daysPassed <= 12) {           
-            bonusPercentage = 1400;                   //14% of baseTokens awarded
+            bonusPercentage = 1300;                   //Day13 - 13% of baseTokens awarded
         }
         else if(daysPassed <= 13) {           
-            bonusPercentage = 1300;                   //13% of baseTokens awarded
+            bonusPercentage = 1200;                   //Day14 - 12% of baseTokens awarded
         }
-        else if(daysPassed <= 14) {           
-            bonusPercentage = 1200;                   //12% of baseTokens awarded
+        else if(daysPassed <= 14) {            
+            bonusPercentage = 1100;                   //Day15 - 11% of baseTokens awarded
         }
         else if(daysPassed <= 15) {            
-            bonusPercentage = 1100;                   //11% of baseTokens awarded
+            bonusPercentage = 1000;                   //Day16 - 10% of baseTokens awarded
         }
         else if(daysPassed <= 16) {            
-            bonusPercentage = 1000;                   //10% of baseTokens awarded
+            bonusPercentage = 900;                    //Day17 - 9% of baseTokens awarded
         }
         else if(daysPassed <= 17) {            
-            bonusPercentage = 900;                    //9% of baseTokens awarded
+            bonusPercentage = 800;                    //Day18 - 8% of baseTokens awarded
         }
         else if(daysPassed <= 18) {            
-            bonusPercentage = 800;                    //8% of baseTokens awarded
+            bonusPercentage = 700;                    //Day19 - 7% of baseTokens awarded
         }
-        else if(daysPassed <= 19) {            
-            bonusPercentage = 700;                    //7% of baseTokens awarded
+        else if(daysPassed <= 19) {          
+            bonusPercentage = 600;                    //Day20 - 6% of baseTokens awarded
         }
-        else if(daysPassed <= 20) {          
-            bonusPercentage = 600;                    //6% of baseTokens awarded
+        else if(daysPassed <= 20) {           
+            bonusPercentage = 500;                    //Day21 - 5% of baseTokens awarded
         }
         else if(daysPassed <= 21) {           
-            bonusPercentage = 500;                    //5% of baseTokens awarded
+            bonusPercentage = 400;                    //Day22 - 4% of baseTokens awarded
         }
         else if(daysPassed <= 22) {           
-            bonusPercentage = 400;                    //4% of baseTokens awarded
+            bonusPercentage = 300;                    //Day23 - 3% of baseTokens awarded
         }
-        else if(daysPassed <= 23) {           
-            bonusPercentage = 300;                    //3% of baseTokens awarded
+        else if(daysPassed <= 23) {            
+            bonusPercentage = 200;                    //Day24 - 2% of baseTokens awarded
         }
         else if(daysPassed <= 24) {            
-            bonusPercentage = 200;                    //2% of baseTokens awarded
+            bonusPercentage = 100;                    //Day25 - 1% of baseTokens awarded
         }
         else if(daysPassed <= 25) {            
-            bonusPercentage = 100;                    //1% of baseTokens awarded
+            bonusPercentage = 75;                     //Day26 - 0.75% of baseTokens awarded
         }
         else if(daysPassed <= 26) {            
-            bonusPercentage = 75;                     //0.75% of baseTokens awarded
+            bonusPercentage = 50;                     //Day27 - 0.50% of baseTokens awarded
         }
         else if(daysPassed <= 27) {            
-            bonusPercentage = 50;                     //0.50% of baseTokens awarded
+            bonusPercentage = 25;                     //Day28 - 0.25% of baseTokens awarded
         }
         else if(daysPassed <= 28) {            
-            bonusPercentage = 25;                     //0.25% of baseTokens awarded
+            bonusPercentage = 10;                     //Day29 - 0.10% of baseTokens awarded
         }
         else if(daysPassed <= 29) {            
-            bonusPercentage = 10;                     //0.10% of baseTokens awarded
-        }
-        else if(daysPassed <= 30) {            
-            bonusPercentage = 5;                      //0.05% of baseTokens awarded
+            bonusPercentage = 5;                      //Day30 - 0.05% of baseTokens awarded
         }
         else {
             bonus = 0;                                //no bonus for anything less than $10,000
@@ -318,6 +321,9 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
             ICO_startTimestamp = now;
         }
         state = newState;
+    }
+    function totalEthRaised(uint256 preSale1WeiCollected, uint256 preSale2WeiCollected, uint256 ICO_WeiCollected) constant returns(uint256){
+        totalEthRaised = preSale1WeiCollected.add(preSale2WeiCollected).add(ICO_WeiCollected).div(1000000000000000000);   //adding wei raised in each round together and converting to ETH
     }
     /**
     * @notice Owner can claim collected ether

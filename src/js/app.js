@@ -40,10 +40,10 @@ jQuery(document).ready(function($) {
         $('input[name="preSale2DollarHardCap"]', form).val(5000000);
         $('input[name="ICO_basePrice"]', form).val(100);
         $('input[name="ICO_DollarHardCap"]', form).val(50000000);
-        // $('input[name="priceIncreaseInterval"]', form).val(60*60*24);
+        $('input[name="bonusDecreaseInterval"]', form).val(60*60*24);
         // $('input[name="priceIncreaseAmount"]', form).val(20);
         $('input[name="ethPrice"]', form).val(300);
-        $('input[name="ownersPercent"]', form).val(10);
+        $('input[name="ownersPercent"]', form).val(100);
 
         setInterval(function(){$('#clock').val( (new Date()).toISOString() )}, 1000);
 
@@ -74,6 +74,7 @@ jQuery(document).ready(function($) {
 
         let tokenAddress = $('input[name="tokenAddress"]', form).val();
 
+        let ethPrice = $('input[name="ethPrice"]', form).val();        
         let preSale1_startTimestamp = timeStringToTimestamp($('input[name="startTimePresale1"]', form).val());
         let preSale1_endTimestamp  = timeStringToTimestamp($('input[name="endTimePresale1"]', form).val());
         let preSale2_startTimestamp = timeStringToTimestamp($('input[name="startTimePresale2"]', form).val());
@@ -86,13 +87,12 @@ jQuery(document).ready(function($) {
         let preSale2DollarHardCap = $('input[name="preSale2DollarHardCap"]', form).val();
         let ICO_basePrice = $('input[name="ICO_basePrice"]', form).val();
         let ICO_DollarHardCap = $('input[name="ICO_DollarHardCap"]', form).val();
-        let ethPrice = $('input[name="ethPrice"]', form).val();        
-        // let priceIncreaseInterval = $('input[name="priceIncreaseInterval"]', form).val();
+        let bonusDecreaseInterval = $('input[name="bonusDecreaseInterval"]', form).val();
         // let priceIncreaseAmount = $('input[name="priceIncreaseAmount"]', form).val();          
         let ownersPercent  = $('input[name="ownersPercent"]', form).val();
 
         publishContract(crowdsaleContract, 
-            [ethPrice, preSale1BasePrice, preSale1DollarHardCap, preSale2BasePrice, preSale2DollarHardCap, ICO_basePrice, ICO_DollarHardCap, /*priceIncreaseInterval, priceIncreaseAmount, */ownersPercent],
+            [ethPrice, preSale1BasePrice, preSale1DollarHardCap, preSale2BasePrice, preSale2DollarHardCap, ICO_basePrice, ICO_DollarHardCap, bonusDecreaseInterval, ownersPercent],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
             }, 
@@ -103,6 +103,7 @@ jQuery(document).ready(function($) {
                     if(!!error) console.log('Can\'t get token address.\n', error);
                     $('input[name="tokenAddress"]',form).val(result);
                 });
+                $('input[name="balance"]', '#manageCrowdsale').val(contract.balance);
             }
         );
     });
@@ -124,6 +125,10 @@ jQuery(document).ready(function($) {
         crowdsaleInstance.ethPrice(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="ethPrice"]', form).val(result);
+        });
+        crowdsaleInstance.bonusDecreaseInterval(function(error, result){
+            if(!!error) console.log('Contract info loading error:\n', error);
+            $('input[name="bonusDecreaseInterval"]', form).val(result);
         });
         crowdsaleInstance.preSale1_endTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
@@ -173,7 +178,7 @@ jQuery(document).ready(function($) {
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="ICO_DollarHardCap"]', form).val(result);
         });
-        web3.eth.getBalance(crowdsaleAddress, function(error, result){
+        crowdsaleInstance.getBalance(crowdsaleAddress, function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="balance"]', form).val(web3.fromWei(result, 'ether'));
         });
@@ -189,7 +194,7 @@ jQuery(document).ready(function($) {
     $('#switchState1').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
-        let form = $('#manageCrowdsale1');
+        let form = $('#manageCrowdsale');
 
         crowdsaleInstance.setState(1, function (error, result){
             if(!!error){
@@ -204,7 +209,7 @@ jQuery(document).ready(function($) {
     $('#switchState2').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
-        let form = $('#manageCrowdsale2');
+        let form = $('#manageCrowdsale');
 
         crowdsaleInstance.setState(2, function (error, result){
             if(!!error){
@@ -219,7 +224,7 @@ jQuery(document).ready(function($) {
     $('#switchState3').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
-        let form = $('#manageCrowdsale3');
+        let form = $('#manageCrowdsale');
 
         crowdsaleInstance.setState(3, function (error, result){
             if(!!error){

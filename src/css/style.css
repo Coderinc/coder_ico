@@ -1,1 +1,3 @@
-body{padding:20px}.error{color:red}input.ethAddress,input.ethTx{width:30em}input:read-only{background-color:#e0e0e0;width:200px;}.abi{display:block;width:100%;height:3em}
+body{padding:20px}.error{color:red}input.ethAddress,input.ethTx{width:30em}input:read-only{background-color:#e0e0e0;width:200px;}.abi{display:block;width:100%;height:3em}.table{
+    border: 1px solid black;
+}
