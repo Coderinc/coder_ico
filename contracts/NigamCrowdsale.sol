@@ -127,7 +127,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
         } else if(state == State.SecondPreSale) {
             rate = calculatePreSaleTwoRate(etherAmount, preSale2BasePrice);
         } else if(state == State.ICO){
-            rate = calculateICOrate(etherAmount, ICO_basePrice, bonusDecreaseInterval);
+            rate = calculateICOrate(etherAmount, ICO_basePrice);
         } else {
             revert();   //state is wrong
         }
@@ -148,34 +148,34 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
         uint8 bonusPercentage;                              //bonus percent of tokens awarded for ETH sent
         uint256 rate = ethPrice.div(basePrice).mul(100);    //convert basePrice from cents, calculate base rate (CRD/ETH)
         uint256 dollarAmount = etherAmount.mul(ethPrice).div(1000000000000000000);   //dollarAmount sent to contract
-        if(dollarAmount >= 500) {                //$500,000
+        if(dollarAmount >= 500000) {                //$500,000
             bonusPercentage = 50;                   //50% of baseTokens awarded
         }
-        else if(dollarAmount >= 400) {           //$400,000
+        else if(dollarAmount >= 400000) {           //$400,000
             bonusPercentage = 45;                   //45% of baseTokens awarded
         }
-        else if(dollarAmount >= 300) {           //$300,000
+        else if(dollarAmount >= 300000) {           //$300,000
             bonusPercentage = 40;                   //40% of baseTokens awarded
         }
-        else if(dollarAmount >= 200) {           //$200,000
+        else if(dollarAmount >= 200000) {           //$200,000
             bonusPercentage = 35;                   //35% of baseTokens awarded
         }
-        else if(dollarAmount >= 100) {           //$100,000
+        else if(dollarAmount >= 100000) {           //$100,000
             bonusPercentage = 30;                   //30% of baseTokens awarded
         }
-        else if(dollarAmount >= 80) {            //$50,000
+        else if(dollarAmount >= 50000) {            //$50,000
             bonusPercentage = 29;                   //29% of baseTokens awarded
         }
-        else if(dollarAmount >= 70) {            //$40,000
+        else if(dollarAmount >= 40000) {            //$40,000
             bonusPercentage = 28;                   //28% of baseTokens awarded
         }
-        else if(dollarAmount >= 60) {            //$30,000
+        else if(dollarAmount >= 30000) {            //$30,000
             bonusPercentage = 27;                   //27% of baseTokens awarded
         }
-        else if(dollarAmount >= 50) {            //$20,000
+        else if(dollarAmount >= 20000) {            //$20,000
             bonusPercentage = 26;                   //26% of baseTokens awarded
         }
-        else if(dollarAmount >= 40) {            //$10,000
+        else if(dollarAmount >= 10000) {            //$10,000
             bonusPercentage = 25;                   //25% of baseTokens awarded
         }
         else {
@@ -186,10 +186,10 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
         return rate;
     }
 
-    function calculateICOrate(uint256 etherAmount, uint256 basePrice, uint256 bonusDecreaseInterval) constant returns(uint256){
+    function calculateICOrate(uint256 etherAmount, uint256 basePrice) constant returns(uint256){
         if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
         require(etherAmount >= 100 finney);                             //minimum contribution 0.1 ETH
-        uint256 rate = ethPrice.div(basePrice).mul(100);                //calculate initial # tokens for ETH sent, convert to cents
+        uint256 rate = ethPrice.div(basePrice).mul(100);                //calculate initial # tokens per ETH sent, convert to cents
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
         daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);     //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
         uint256 bonusPercentage;                                        //bonus percent of tokens handed per ETH received
@@ -268,26 +268,11 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
         else if(daysPassed <= 24) {            
             bonusPercentage = 100;                    //Day25 - 1% of baseTokens awarded
         }
-        else if(daysPassed <= 25) {            
-            bonusPercentage = 75;                     //Day26 - 0.75% of baseTokens awarded
-        }
-        else if(daysPassed <= 26) {            
-            bonusPercentage = 50;                     //Day27 - 0.50% of baseTokens awarded
-        }
-        else if(daysPassed <= 27) {            
-            bonusPercentage = 25;                     //Day28 - 0.25% of baseTokens awarded
-        }
-        else if(daysPassed <= 28) {            
-            bonusPercentage = 10;                     //Day29 - 0.10% of baseTokens awarded
-        }
-        else if(daysPassed <= 29) {            
-            bonusPercentage = 5;                      //Day30 - 0.05% of baseTokens awarded
-        }
         else {
-            bonus = 0;                                //no bonus for anything less than $10,000
+            bonus = 0;                                //no bonus after 25th day
         }               
         uint256 bonus = rate.mul(bonusPercentage).div(10000);   //divide by 10,000 to convert bonusPercentage to percent 
-        rate = rate.add(bonus);                               //add bonus tokens to base rate
+        rate = rate.add(bonus);                                 //add bonus tokens to base rate
         return rate;
     }
 
@@ -322,7 +307,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens/*, usingOraclize */ {
         }
         state = newState;
     }
-    function totalEthRaised(uint256 preSale1WeiCollected, uint256 preSale2WeiCollected, uint256 ICO_WeiCollected) constant returns(uint256){
+    function totalEthRaised() constant returns(uint256){
         totalEthRaised = preSale1WeiCollected.add(preSale2WeiCollected).add(ICO_WeiCollected).div(1000000000000000000);   //adding wei raised in each round together and converting to ETH
     }
     /**
