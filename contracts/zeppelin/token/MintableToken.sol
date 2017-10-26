@@ -48,4 +48,21 @@ contract MintableToken is StandardToken, Ownable {
     MintFinished();
     return true;
   }
+
+  /**
+   * Allow transfer only after crowdsale finished
+   */
+  modifier canTransfer() {
+    require(mintingFinished);
+    _;
+  }
+
+  function transfer(address to, uint256 value) canTransfer returns (bool) {
+      super.transfer(_to, _value);
+  }
+
+  function transferFrom(address from, address to, uint256 _value) canTransfer returns (bool) {
+      super.transferFrom(_from, to, value);
+  }
+
 }
