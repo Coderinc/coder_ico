@@ -35,18 +35,15 @@
 <h3>1. Publish Contract</h3>
 <form id="publishContractsForm">
     <table>
-        <tr><td class="table">ETH Price:</td><td>$<input type="text" name="ethPrice" value="" class="number"></td><td></td></tr>
-        <tr><td class="table">Presale 1 Price per Token:</td><td><input type="text" name="preSale1BasePrice" value="" class="number"></td><td>in cents</td></tr>
-        <tr><td class="table">Presale 1 Hard Cap:</td><td>$<input type="text" name="preSale1DollarHardCap" value="" class="number"></td><td></td></tr>
-        <tr><td class="table">Presale 2 Price per Token:</td><td><input type="text" name="preSale2BasePrice" value="" class="number"></td><td>in cents</td></tr>
-        <tr><td class="table">Presale 2 Hard Cap:</td><td>$<input type="text" name="preSale2DollarHardCap" value="" class="number"></td><td></td></tr>
-        <tr><td class="table">ICO Price per Token:</td><td><input type="text" name="ICO_basePrice" value="" class="number"></td><td>in cents</td></tr>
-        <tr><td class="table">ICO Hard Cap:</td><td>$<input type="text" name="ICO_DollarHardCap" value="" class="number"></td><td></td></tr>
+        <tr><td class="table">Presale 1 Price per Token:</td><td><input type="text" name="preSale1BasePriceInWei" value="" class="number"></td><td>in wei</td></tr>
+        <tr><td class="table">Presale 1 Hard Cap:</td><td><input type="text" name="preSale1EthHardCap" value="" class="number"></td><td>in ETH</td></tr>
+        <tr><td class="table">Presale 2 Price per Token:</td><td><input type="text" name="preSale2BasePriceInWei" value="" class="number"></td><td>in wei</td></tr>
+        <tr><td class="table">Presale 2 Hard Cap:</td><td><input type="text" name="preSale2EthHardCap" value="" class="number"></td><td>in ETH</td></tr>
+        <tr><td class="table">ICO Price per Token:</td><td><input type="text" name="ICO_basePriceInWei" value="" class="number"></td><td>in wei</td></tr>
+        <tr><td class="table">ICO Hard Cap:</td><td><input type="text" name="ICO_EthHardCap" value="" class="number"></td><td>in ETH</td></tr>
         <tr><td class="table">Bonus Decrease Interval:</td><td><input type="text" name="bonusDecreaseInterval" value="" class="number"></td><td>in seconds</td></tr>
-        <!-- <tr><td>Price Increase:</td><td><input type="text" name="priceIncreaseAmount" value="" class="number"></td><td>in cents</td></tr> -->
         <tr><td class="table">Owner Tokens Minted (as % of Buyer Tokens):</td><td><input type="text" name="ownersPercent" value="" class="number"></td><td>% (100% = 50% of Reserve)</td></tr>
     </table>
-    <!-- <div><input type="button" id="publishToken" value="Publish Token"></div> -->
     <div><input type="button" id="publishContracts" value="Publish Crowdsale"></div>
     <br>
     <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
@@ -54,7 +51,7 @@
     <div><label>Token Published at: <input type="text" name="tokenAddress" value="" class="ethAddress"></label></div>
 </form>
 
-<br>
+<!-- <br>
 <hr>
 <h2>Presale Round 1</h2>
 <h3>2. Start Round</h3>
@@ -157,7 +154,7 @@
   <table>
       <tr><td><h3>Current balance:</h3></td><td><input type="text" name="balance" readonly value="" class="number"></td><td>ETH</td></tr>
   </table>
-
+ -->
 </body>
 </html>
 

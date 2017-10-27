@@ -34,15 +34,13 @@ jQuery(document).ready(function($) {
         $('input[name="startTimePresale1"]', form).val(d.toISOString());
         d = new Date(nowTimestamp+2*60*60*1000);
         $('input[name="endTimePresale1"]', form).val(d.toISOString());
-        $('input[name="preSale1BasePrice"]', form).val(100);
-        $('input[name="preSale1DollarHardCap"]', form).val(500000);
-        $('input[name="preSale2BasePrice"]', form).val(100);
-        $('input[name="preSale2DollarHardCap"]', form).val(5000000);
-        $('input[name="ICO_basePrice"]', form).val(100);
-        $('input[name="ICO_DollarHardCap"]', form).val(50000000);
+        $('input[name="preSale1BasePriceInWei"]', form).val(100);
+        $('input[name="preSale1EthHardCap"]', form).val(500000);
+        $('input[name="preSale2BasePriceInWei"]', form).val(100);
+        $('input[name="preSale2EthHardCap"]', form).val(5000000);
+        $('input[name="ICO_basePriceInWei"]', form).val(100);
+        $('input[name="ICO_EthHardCap"]', form).val(50000000);
         $('input[name="bonusDecreaseInterval"]', form).val(60*60*24);
-        // $('input[name="priceIncreaseAmount"]', form).val(20);
-        $('input[name="ethPrice"]', form).val(300);
         $('input[name="ownersPercent"]', form).val(100);
 
         setInterval(function(){$('#clock').val( (new Date()).toISOString() )}, 1000);
@@ -74,25 +72,23 @@ jQuery(document).ready(function($) {
 
         let tokenAddress = $('input[name="tokenAddress"]', form).val();
 
-        let ethPrice = $('input[name="ethPrice"]', form).val();        
         let preSale1_startTimestamp = timeStringToTimestamp($('input[name="startTimePresale1"]', form).val());
         let preSale1_endTimestamp  = timeStringToTimestamp($('input[name="endTimePresale1"]', form).val());
         let preSale2_startTimestamp = timeStringToTimestamp($('input[name="startTimePresale2"]', form).val());
         let preSale2_endTimestamp  = timeStringToTimestamp($('input[name="endTimePresale2"]', form).val());
         let ICO_startTimestamp = timeStringToTimestamp($('input[name="startTimeICO"]', form).val());
         let ICO_endTimestamp  = timeStringToTimestamp($('input[name="endTimeICO"]', form).val());
-        let preSale1BasePrice = $('input[name="preSale1BasePrice"]', form).val();
-        let preSale1DollarHardCap = $('input[name="preSale1DollarHardCap"]', form).val();
-        let preSale2BasePrice = $('input[name="preSale2BasePrice"]', form).val();
-        let preSale2DollarHardCap = $('input[name="preSale2DollarHardCap"]', form).val();
-        let ICO_basePrice = $('input[name="ICO_basePrice"]', form).val();
-        let ICO_DollarHardCap = $('input[name="ICO_DollarHardCap"]', form).val();
+        let preSale1BasePriceInWei = $('input[name="preSale1BasePriceInWei"]', form).val();
+        let preSale1EthHardCap = $('input[name="preSale1EthHardCap"]', form).val();
+        let preSale2BasePriceInWei = $('input[name="preSale2BasePriceInWei"]', form).val();
+        let preSale2EthHardCap = $('input[name="preSale2EthHardCap"]', form).val();
+        let ICO_basePriceInWei = $('input[name="ICO_basePriceInWei"]', form).val();
+        let ICO_EthHardCap = $('input[name="ICO_EthHardCap"]', form).val();
         let bonusDecreaseInterval = $('input[name="bonusDecreaseInterval"]', form).val();
-        // let priceIncreaseAmount = $('input[name="priceIncreaseAmount"]', form).val();          
         let ownersPercent  = $('input[name="ownersPercent"]', form).val();
 
         publishContract(crowdsaleContract, 
-            [ethPrice, preSale1BasePrice, preSale1DollarHardCap, preSale2BasePrice, preSale2DollarHardCap, ICO_basePrice, ICO_DollarHardCap, bonusDecreaseInterval, ownersPercent],
+            [preSale1BasePriceInWei, preSale1EthHardCap, preSale2BasePriceInWei, preSale2EthHardCap, ICO_basePriceInWei, ICO_EthHardCap, bonusDecreaseInterval, ownersPercent],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
             }, 
@@ -121,10 +117,6 @@ jQuery(document).ready(function($) {
         crowdsaleInstance.preSale1_startTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="startTimePresale1"]', form).val(timestampToString(result));
-        });
-        crowdsaleInstance.ethPrice(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="ethPrice"]', form).val(result);
         });
         crowdsaleInstance.bonusDecreaseInterval(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
@@ -166,15 +158,15 @@ jQuery(document).ready(function($) {
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="ICO_EthCollected"]', form).val(web3.fromWei(result, 'ether'));
         });
-        crowdsaleInstance.preSale1DollarHardCap(function(error, result){
+        crowdsaleInstance.preSale1EthHardCap(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="preSale1DollarHardCap"]', form).val(result);
         });
-        crowdsaleInstance.preSale2DollarHardCap(function(error, result){
+        crowdsaleInstance.preSale2EthHardCap(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="preSale2DollarHardCap"]', form).val(result);
         });
-        crowdsaleInstance.ICO_DollarHardCap(function(error, result){
+        crowdsaleInstance.ICO_EthHardCap(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="ICO_DollarHardCap"]', form).val(result);
         });
