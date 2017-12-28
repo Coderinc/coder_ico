@@ -2,13 +2,13 @@ pragma solidity ^0.4.0;
 
 import './zeppelin/ownership/Ownable.sol';
 import './NigamCoin.sol';
+import './TokenTimelockMod.sol';
 
 contract NigamCrowdsale is Ownable, HasNoTokens{
     using SafeMath for uint256;
     using SafeMath for uint8;
 
     NigamCoin public token;                         //token for crowdsale
-    uint256   public totalEthRaised;                //total ETH amount raised
 
     uint256   public preSale1_startTimestamp;       //when Presale 1 started uint256 public
     uint256   public preSale1BasePriceInWei;        //price in wei
@@ -28,9 +28,13 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
     uint256   public ICO_WeiCollected;              //how much wei already collected at main sale
     uint256   public ICO_endTimestamp;              //when Presale 2 ends uint256 public
     uint256   public bonusDecreaseInterval;         //seconds before bonus decreases uint32
-    uint256   public daysPassed;                    //days passed since ICO start datetime (86,400 sec intervals)
+    uint256   public daysPassed;                    //days passed since ICO start datetime (86,400 sec/day)
 
-    uint8     public ownersPercent;                 //percent of tokens that will be minted to owner during the sale
+    uint8     public ownersPercent;                 //percent of tokens that will be minted to owner
+
+    uint64[]  reserveReleases;                      //lockup periods per address
+    uint256[] reserveAmounts;                       //lockup amounts per address
+    address[] reserveBeneficiaries;                 //lockup addresses 
 
     enum State { Paused, FirstPreSale, SecondPreSale, ICO, Finished }
     State public state;                             //current state of the contract
@@ -44,6 +48,11 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
     */
     event TokenPurchase(address indexed purchaser, uint256 value, uint256 amount);
 
+    /**
+    * Stores addresses of beneficiaries in constructor timelocks
+    */
+    event TokenTimelockCreated(address TokenTimelock, uint64 releaseTimestamp, address beneficiary, uint256 amount);
+
 
     function NigamCrowdsale(
         uint256 _preSale1BasePriceInWei, uint256 _preSale1EthHardCap,
@@ -52,19 +61,15 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         uint8 _ownersPercent
         ){
         state = State.Paused;
-
         preSale1BasePriceInWei = _preSale1BasePriceInWei;             
         preSale1EthHardCap = _preSale1EthHardCap;          
-
         preSale2BasePriceInWei = _preSale2BasePriceInWei;             
         preSale2EthHardCap = _preSale2EthHardCap;                   
-
         ICO_basePriceInWei = _ICO_basePriceInWei;                        
         ICO_EthHardCap = _ICO_EthHardCap;                      
         bonusDecreaseInterval = _bonusDecreaseInterval;
-
-        ownersPercent = _ownersPercent;     //whole number that will be divided by 100 later
-        token = new NigamCoin();            //creating token in constructor
+        ownersPercent = _ownersPercent;     
+        token = new NigamCoin();                    //creating token in constructor
     }
 
     /**
@@ -120,50 +125,50 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
     }
 
     function calculatePreSaleOneRate(uint256 etherAmount, uint256 basePriceWei) constant returns(uint256) {
-        require(etherAmount >= 100 finney);                   //minimum contribution 0.1 ETH
-        uint8 bonusPercentage = 75;                           //75% of baseTokens awarded as bonus
-        uint256 rate = etherAmount.div(basePriceWei);      //convert etherAmount to wei and divide by price per token (in wei)
-        uint256 bonus = rate.mul(bonusPercentage).div(100);   //divide by 100 to convert bonusPercentage to percent 
-        rate = rate.add(bonus);                               //add bonus tokens to base rate
+        require(etherAmount >= 100 finney);                     //minimum contribution 0.1 ETH
+        uint8 bonusPercentage = 75;                             //75% of baseTokens awarded as bonus
+        uint256 rate = etherAmount.div(basePriceWei);           //convert etherAmount to wei and divide by price per token (in wei)
+        uint256 bonus = rate.mul(bonusPercentage).div(100);     //divide by 100 to convert bonusPercentage to percent 
+        rate = rate.add(bonus);                                 //add bonus tokens to base rate
         return rate;
     }
 
     function calculatePreSaleTwoRate(uint256 etherAmount, uint256 basePriceWei) constant returns(uint256) {
         require(etherAmount >= 100 finney);                 //minimum contribution 0.1 ETH
         uint8 bonusPercentage;                              //bonus percent of tokens awarded for ETH sent
-        uint256 rate = etherAmount.div(basePriceWei);      //convert etherAmount to wei and divide by price per token (in wei)
-        if(etherAmount >= 10 ether) {                 //$500,000 or or 1667 ether
+        uint256 rate = etherAmount.div(basePriceWei);       //convert etherAmount to wei and divide by price per token (in wei)
+        if(etherAmount >= 500 ether) {                  //$500,000 or or 500 ether
             bonusPercentage = 50;                       //50% of baseTokens awarded
         }
-        else if(etherAmount >= 9 ether) {            //$400,000 or 1333 ether
+        else if(etherAmount >= 400 ether) {             //$400,000 or 400 ether
             bonusPercentage = 45;                       //45% of baseTokens awarded
         }
-        else if(etherAmount >= 8 ether) {             //$300,000 or 1000 ether
+        else if(etherAmount >= 300 ether) {             //$300,000 or 300 ether
             bonusPercentage = 40;                       //40% of baseTokens awarded
         }
-        else if(etherAmount >= 7 ether) {             //$200,000 or 667 ether
+        else if(etherAmount >= 200 ether) {             //$200,000 or 200 ether
             bonusPercentage = 35;                       //35% of baseTokens awarded
         }
-        else if(etherAmount >= 6 ether) {             //$100,000 or 333 ether
+        else if(etherAmount >= 100 ether) {             //$100,000 or 100 ether
             bonusPercentage = 30;                       //30% of baseTokens awarded
         }
-        else if(etherAmount >= 5 ether) {             //$50,000 or 167 ether
+        else if(etherAmount >= 50 ether) {              //$50,000 or 50 ether
             bonusPercentage = 29;                       //29% of baseTokens awarded
         }
-        else if(etherAmount >= 4 ether) {             //$40,000 or 133 ether
+        else if(etherAmount >= 40 ether) {              //$40,000 or 40 ether
             bonusPercentage = 28;                       //28% of baseTokens awarded
         }
-        else if(etherAmount >= 3 ether) {              //$30,000 or 100 ether
+        else if(etherAmount >= 30 ether) {              //$30,000 or 30 ether
             bonusPercentage = 27;                       //27% of baseTokens awarded
         }
-        else if(etherAmount >= 2 ether) {              //$20,000 or 67 ether
+        else if(etherAmount >= 20 ether) {              //$20,000 or 20 ether
             bonusPercentage = 26;                       //26% of baseTokens awarded
         }
-        else if(etherAmount >= 1 ether) {              //$10,000 or 33 ether
+        else if(etherAmount >= 10 ether) {              //$10,000 or 10 ether
             bonusPercentage = 25;                       //25% of baseTokens awarded
         }
         else {
-            bonus = 0;                              //no bonus for anything less than $10,000
+            bonusPercentage = 0;                        //no bonus for anything less than $10,000
         }               
         uint256 bonus = rate.mul(bonusPercentage).div(100);   //divide by 100 to convert bonusPercentage to percent 
         rate = rate.add(bonus);                               //add bonus tokens to base rate
@@ -172,89 +177,15 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
 
     function calculateICOrate(uint256 etherAmount, uint256 basePriceWei) constant returns(uint256){
         if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
-        require(etherAmount >= 100 finney);                             //minimum contribution 0.1 ETH
-        uint256 rate = etherAmount.div(basePriceWei);      //convert etherAmount to wei and divide by price per token (in wei)
+        require(etherAmount >= 10 finney);                                     //minimum contribution 0.01 ETH
+        uint256 rate = etherAmount.div(basePriceWei);                           //convert etherAmount to wei and divide by price per token (in wei)
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
-        daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);     //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
-        uint256 bonusPercentage;                                        //bonus percent of tokens handed per ETH received
-        if(daysPassed <= 0) {                
-            bonusPercentage = 2500;                   //Day1 - 25% of baseTokens awarded
+        daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);             //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
+        uint256 startBonusPercentage = 2500;                                    //bonus percent of tokens handed on Day 1 (* 100)
+        uint256 bonusPercentage = startBonusPercentage.sub(100.mul(daysPassed));   //1% decrease in bonusTokens per day
+        if (bonusPercentage < 0) {
+            bonusPercentage = 0;
         }
-        else if(daysPassed <= 1) {           
-            bonusPercentage = 2400;                   //Day2 - 24% of baseTokens awarded
-        }
-        else if(daysPassed <= 2) {          
-            bonusPercentage = 2300;                   //Day3 - 23% of baseTokens awarded
-        }
-        else if(daysPassed <= 3) {           
-            bonusPercentage = 2200;                   //Day4 - 22% of baseTokens awarded
-        }
-        else if(daysPassed <= 4) {           
-            bonusPercentage = 2100;                   //Day5 - 21% of baseTokens awarded
-        }
-        else if(daysPassed <= 5) {            
-            bonusPercentage = 2000;                   //Day6 - 20% of baseTokens awarded
-        }
-        else if(daysPassed <= 6) {            
-            bonusPercentage = 1900;                   //Day7 - 19% of baseTokens awarded
-        }
-        else if(daysPassed <= 7) {            
-            bonusPercentage = 1800;                   //Day8 - 18% of baseTokens awarded
-        }
-        else if(daysPassed <= 8) {            
-            bonusPercentage = 1700;                   //Day9 - 17% of baseTokens awarded
-        }
-        else if(daysPassed <= 9) {            
-            bonusPercentage = 1600;                   //Day10 - 16% of baseTokens awarded
-        }
-        else if(daysPassed <= 10) {           
-            bonusPercentage = 1500;                   //Day11 - 15% of baseTokens awarded
-        }
-        else if(daysPassed <= 11) {           
-            bonusPercentage = 1400;                   //Day12 - 14% of baseTokens awarded
-        }
-        else if(daysPassed <= 12) {           
-            bonusPercentage = 1300;                   //Day13 - 13% of baseTokens awarded
-        }
-        else if(daysPassed <= 13) {           
-            bonusPercentage = 1200;                   //Day14 - 12% of baseTokens awarded
-        }
-        else if(daysPassed <= 14) {            
-            bonusPercentage = 1100;                   //Day15 - 11% of baseTokens awarded
-        }
-        else if(daysPassed <= 15) {            
-            bonusPercentage = 1000;                   //Day16 - 10% of baseTokens awarded
-        }
-        else if(daysPassed <= 16) {            
-            bonusPercentage = 900;                    //Day17 - 9% of baseTokens awarded
-        }
-        else if(daysPassed <= 17) {            
-            bonusPercentage = 800;                    //Day18 - 8% of baseTokens awarded
-        }
-        else if(daysPassed <= 18) {            
-            bonusPercentage = 700;                    //Day19 - 7% of baseTokens awarded
-        }
-        else if(daysPassed <= 19) {          
-            bonusPercentage = 600;                    //Day20 - 6% of baseTokens awarded
-        }
-        else if(daysPassed <= 20) {           
-            bonusPercentage = 500;                    //Day21 - 5% of baseTokens awarded
-        }
-        else if(daysPassed <= 21) {           
-            bonusPercentage = 400;                    //Day22 - 4% of baseTokens awarded
-        }
-        else if(daysPassed <= 22) {           
-            bonusPercentage = 300;                    //Day23 - 3% of baseTokens awarded
-        }
-        else if(daysPassed <= 23) {            
-            bonusPercentage = 200;                    //Day24 - 2% of baseTokens awarded
-        }
-        else if(daysPassed <= 24) {            
-            bonusPercentage = 100;                    //Day25 - 1% of baseTokens awarded
-        }
-        else {
-            bonus = 0;                                //no bonus after 25th day
-        }               
         uint256 bonus = rate.mul(bonusPercentage).div(10000);   //divide by 10,000 to convert bonusPercentage to percent 
         rate = rate.add(bonus);                                 //add bonus tokens to base rate
         return rate;
@@ -290,8 +221,9 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         }
         state = newState;
     }
-    function totalEthRaised() constant returns(uint256){
-        totalEthRaised = preSale1WeiCollected.add(preSale2WeiCollected).add(ICO_WeiCollected).div(1000000000000000000);   //adding wei raised in each round together and converting to ETH
+    function totalEthRaised() returns(uint256){
+        uint256 totalEthRaised = preSale1WeiCollected.add(preSale2WeiCollected).add(ICO_WeiCollected);   //total wei raised in each round
+        return totalEthRaised;
     }
     /**
     * @notice Owner can claim collected ether
@@ -301,6 +233,20 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         require(this.balance >= amount);
         owner.transfer(amount);
     }
+
+    function initReserve(uint64[] reserveReleases, uint256[] reserveAmounts, address[] reserveBeneficiaries) internal {
+        require(reserveReleases.length == reserveAmounts.length && reserveReleases.length == reserveBeneficiaries.length);
+        for(uint8 i=0; i < reserveReleases.length; i++){
+            require(reserveReleases[i] > now);
+            require(reserveAmounts[i] > 0);
+            require(reserveBeneficiaries[i] != address(0));
+            TokenTimelock tt = new TokenTimelock(token, reserveBeneficiaries[i], reserveReleases[i]);
+            assert(token.mint(tt, reserveAmounts[i]));
+            TokenTimelockCreated(tt, reserveReleases[i], reserveBeneficiaries[i], reserveAmounts[i]);
+        }
+    }
+
+
 }
 
 

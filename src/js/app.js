@@ -1,4 +1,8 @@
 var $ = jQuery;
+var releaseCount = 0;
+var reserveReleases = [];
+var reserveBeneficiaries = [];
+
 jQuery(document).ready(function($) {
 
     let web3 = null;
@@ -34,12 +38,12 @@ jQuery(document).ready(function($) {
         $('input[name="startTimePresale1"]', form).val(d.toISOString());
         d = new Date(nowTimestamp+2*60*60*1000);
         $('input[name="endTimePresale1"]', form).val(d.toISOString());
-        $('input[name="preSale1BasePriceInWei"]', form).val(100);
-        $('input[name="preSale1EthHardCap"]', form).val(500000);
-        $('input[name="preSale2BasePriceInWei"]', form).val(100);
-        $('input[name="preSale2EthHardCap"]', form).val(5000000);
-        $('input[name="ICO_basePriceInWei"]', form).val(100);
-        $('input[name="ICO_EthHardCap"]', form).val(50000000);
+        $('input[name="preSale1BasePriceInWei"]', form).val(3333333333333333);
+        $('input[name="preSale1EthHardCap"]', form).val(1667);
+        $('input[name="preSale2BasePriceInWei"]', form).val(3333333333333333);
+        $('input[name="preSale2EthHardCap"]', form).val(16667);
+        $('input[name="ICO_basePriceInWei"]', form).val(3333333333333333);
+        $('input[name="ICO_EthHardCap"]', form).val(166667);
         $('input[name="bonusDecreaseInterval"]', form).val(60*60*24);
         $('input[name="ownersPercent"]', form).val(100);
 
@@ -183,51 +187,51 @@ jQuery(document).ready(function($) {
             $('input[name="contractState"]', form).val(result);
         });        
     });
-    $('#switchState1').click(function(){
-        if(crowdsaleContract == null) return;
-        printError('');
-        let form = $('#manageCrowdsale');
+    // $('#switchState1').click(function(){
+    //     if(crowdsaleContract == null) return;
+    //     printError('');
+    //     let form = $('#manageCrowdsale');
 
-        crowdsaleInstance.setState(1, function (error, result){
-            if(!!error){
-                console.log('Can\'t switch state to Presale Round 1:\n', error);
-                printError(error.message.substr(0,error.message.indexOf("\n")));
-                return;
-            }
-            console.log('State:', result);
-            $('#loadCrowdsaleInfo').click();
-        });
-    })
-    $('#switchState2').click(function(){
-        if(crowdsaleContract == null) return;
-        printError('');
-        let form = $('#manageCrowdsale');
+    //     crowdsaleInstance.setState(1, function (error, result){
+    //         if(!!error){
+    //             console.log('Can\'t switch state to Presale Round 1:\n', error);
+    //             printError(error.message.substr(0,error.message.indexOf("\n")));
+    //             return;
+    //         }
+    //         console.log('State:', result);
+    //         $('#loadCrowdsaleInfo').click();
+    //     });
+    // })
+    // $('#switchState2').click(function(){
+    //     if(crowdsaleContract == null) return;
+    //     printError('');
+    //     let form = $('#manageCrowdsale');
 
-        crowdsaleInstance.setState(2, function (error, result){
-            if(!!error){
-                console.log('Can\'t switch state to Presale Round 2:\n', error);
-                printError(error.message.substr(0,error.message.indexOf("\n")));
-                return;
-            }
-            console.log('State:', result);
-            $('#loadCrowdsaleInfo').click();
-        });
-    })
-    $('#switchState3').click(function(){
-        if(crowdsaleContract == null) return;
-        printError('');
-        let form = $('#manageCrowdsale');
+    //     crowdsaleInstance.setState(2, function (error, result){
+    //         if(!!error){
+    //             console.log('Can\'t switch state to Presale Round 2:\n', error);
+    //             printError(error.message.substr(0,error.message.indexOf("\n")));
+    //             return;
+    //         }
+    //         console.log('State:', result);
+    //         $('#loadCrowdsaleInfo').click();
+    //     });
+    // })
+    // $('#switchState3').click(function(){
+    //     if(crowdsaleContract == null) return;
+    //     printError('');
+    //     let form = $('#manageCrowdsale');
 
-        crowdsaleInstance.setState(3, function (error, result){
-            if(!!error){
-                console.log('Can\'t switch state to ICO Round:\n', error);
-                printError(error.message.substr(0,error.message.indexOf("\n")));
-                return;
-            }
-            console.log('State:', result);
-            $('#loadCrowdsaleInfo').click();
-        });
-    })
+    //     crowdsaleInstance.setState(3, function (error, result){
+    //         if(!!error){
+    //             console.log('Can\'t switch state to ICO Round:\n', error);
+    //             printError(error.message.substr(0,error.message.indexOf("\n")));
+    //             return;
+    //         }
+    //         console.log('State:', result);
+    //         $('#loadCrowdsaleInfo').click();
+    //     });
+    // })
     $('#crowdsaleClaim').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
@@ -266,6 +270,48 @@ jQuery(document).ready(function($) {
             console.log('FinalizeCrowdsale tx:', tx);
             $('#loadCrowdsaleInfo').click();
         });
+
+    });
+
+    $('#add-row').click(() => {
+        releaseCount++;
+        var markup = 
+        `<tr>
+            <td>${releaseCount}</td>
+            <td><input type='text' name='release${releaseCount}' /></td>
+            <td><input type='text' name='address${releaseCount}' /></td>
+            <td><input type='text' name='name${releaseCount}' /></td>
+        </tr>`;
+        $('#lockup_table').append(markup);
+    });
+
+    $('#lockup_form').submit((e) => {
+        e.preventDefault();
+
+        var everything = $('#lockup_form').serializeArray();
+        console.log(everything);
+        console.log("*********");
+
+        var releases = [];
+        var benef = [];
+        var names = [];
+
+        everything.forEach(o => {
+            if (/relea/.test(o.name)) releases.push(o.value);
+            if (/add/.test(o.name)) benef.push(o.value);
+            if (/name/.test(o.name)) names.push(o.value);
+
+        });
+
+        reserveReleases = releases;
+        reserveBeneficiaries = benef;
+        reserveNames = names
+
+        console.log(reserveReleases);
+        console.log(reserveBeneficiaries);
+        console.log(reserveNames);
+
+        crowdsaleInstance.initReserve(reserveBeneficiaries, reserveAmounts,  )
 
     });
 
