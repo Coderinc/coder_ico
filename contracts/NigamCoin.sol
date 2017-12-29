@@ -20,12 +20,12 @@ contract NigamCoin is MintableToken, BurnableToken, HasNoContracts, HasNoTokens 
         _;
     }
     
-    function transfer(address to, uint256 value) canTransfer returns (bool) {
+    function transfer(address _to, uint256 _value) canTransfer returns (bool) {
         return super.transfer(_to, _value);
     }
 
-    function transferFrom(address from, address to, uint256 _value) canTransfer returns (bool) {
-        return super.transferFrom(_from, to, value);
+    function transferFrom(address _from, address _to, uint256 _value) canTransfer returns (bool) {
+        return super.transferFrom(_from, _to, _value);
     }
 
 }

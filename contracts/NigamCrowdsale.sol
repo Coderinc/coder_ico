@@ -12,13 +12,13 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
 
     uint256   public preSale1_startTimestamp;       //when Presale 1 started uint256 public
     uint256   public preSale1BasePriceInWei;        //price in wei
-    uint256   public preSale1EthHardCap;            //hard cap for Round 1 presale in ETH  
+    uint256   public preSale1EthHardCap;            //hard cap for Round 1 presale in ETH
     uint256   public preSale1WeiCollected;          //how much wei already collected at pre-sale 1
     uint256   public preSale1_endTimestamp;         //when Presale 1 ends uint256 public
 
     uint256   public preSale2_startTimestamp;       //when Presale 2 started uint256 public
     uint256   public preSale2BasePriceInWei;        //price in wei
-    uint256   public preSale2EthHardCap;            //hard cap for Round 2 presale in ether  
+    uint256   public preSale2EthHardCap;            //hard cap for Round 2 presale in ether
     uint256   public preSale2WeiCollected;          //how much wei already collected at pre-sale 2
     uint256   public preSale2_endTimestamp;         //when Presale 2 ends uint256 public
 
@@ -32,12 +32,9 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
 
     uint8     public ownersPercent;                 //percent of tokens that will be minted to owner
 
-    uint64[]  reserveReleases;                      //lockup periods per address
-    uint256[] reserveAmounts;                       //lockup amounts per address
-    address[] reserveBeneficiaries;                 //lockup addresses 
-
     enum State { Paused, FirstPreSale, SecondPreSale, ICO, Finished }
     State public state;                             //current state of the contract
+
 
 
     /**
@@ -61,14 +58,14 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         uint8 _ownersPercent
         ){
         state = State.Paused;
-        preSale1BasePriceInWei = _preSale1BasePriceInWei;             
-        preSale1EthHardCap = _preSale1EthHardCap;          
-        preSale2BasePriceInWei = _preSale2BasePriceInWei;             
-        preSale2EthHardCap = _preSale2EthHardCap;                   
-        ICO_basePriceInWei = _ICO_basePriceInWei;                        
-        ICO_EthHardCap = _ICO_EthHardCap;                      
+        preSale1BasePriceInWei = _preSale1BasePriceInWei;
+        preSale1EthHardCap = _preSale1EthHardCap;
+        preSale2BasePriceInWei = _preSale2BasePriceInWei;
+        preSale2EthHardCap = _preSale2EthHardCap;
+        ICO_basePriceInWei = _ICO_basePriceInWei;
+        ICO_EthHardCap = _ICO_EthHardCap;
         bonusDecreaseInterval = _bonusDecreaseInterval;
-        ownersPercent = _ownersPercent;     
+        ownersPercent = _ownersPercent;
         token = new NigamCoin();                    //creating token in constructor
     }
 
@@ -81,9 +78,9 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         uint256 rate = currentRate(msg.value);
         assert(rate > 0);
         uint256 buyerTokens = rate.mul(msg.value);
-        uint256 ownerTokens = buyerTokens.mul(ownersPercent).div(100);  //convert ownersPercent to percent by dividing it by 100
+        //uint256 ownerTokens = buyerTokens.mul(ownersPercent).div(100);  //convert ownersPercent to percent by dividing it by 100
         token.mint(msg.sender, buyerTokens);
-        token.mint(owner, ownerTokens);
+        //token.mint(owner, ownerTokens);
         TokenPurchase(msg.sender, msg.value, buyerTokens);              //event for TokenPurchase
         if (state == State.FirstPreSale) {
             preSale1WeiCollected = preSale1WeiCollected.add(msg.value);
@@ -100,8 +97,8 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
     * @notice Check if crowdsale is open or not
     */
     function crowdsaleOpen() constant returns(bool){
-        return  (state != State.Paused) && 
-                (state != State.Finished) && 
+        return  (state != State.Paused) &&
+                (state != State.Finished) &&
                 !hardCapReached(state);
     }
     /**
@@ -128,7 +125,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         require(etherAmount >= 100 finney);                     //minimum contribution 0.1 ETH
         uint8 bonusPercentage = 75;                             //75% of baseTokens awarded as bonus
         uint256 rate = etherAmount.div(basePriceWei);           //convert etherAmount to wei and divide by price per token (in wei)
-        uint256 bonus = rate.mul(bonusPercentage).div(100);     //divide by 100 to convert bonusPercentage to percent 
+        uint256 bonus = rate.mul(bonusPercentage).div(100);     //divide by 100 to convert bonusPercentage to percent
         rate = rate.add(bonus);                                 //add bonus tokens to base rate
         return rate;
     }
@@ -169,25 +166,26 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         }
         else {
             bonusPercentage = 0;                        //no bonus for anything less than $10,000
-        }               
-        uint256 bonus = rate.mul(bonusPercentage).div(100);   //divide by 100 to convert bonusPercentage to percent 
+        }
+        uint256 bonus = rate.mul(bonusPercentage).div(100);   //divide by 100 to convert bonusPercentage to percent
         rate = rate.add(bonus);                               //add bonus tokens to base rate
         return rate;
     }
 
     function calculateICOrate(uint256 etherAmount, uint256 basePriceWei) constant returns(uint256){
         if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
-        require(etherAmount >= 10 finney);                                     //minimum contribution 0.01 ETH
-        uint256 rate = etherAmount.div(basePriceWei);                           //convert etherAmount to wei and divide by price per token (in wei)
+        require(etherAmount >= 10 finney);                               //minimum contribution 0.01 ETH
+        uint256 rate = etherAmount.div(basePriceWei);                    //convert etherAmount to wei and divide by price per token (in wei)
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
-        daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);             //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
-        uint256 startBonusPercentage = 2500;                                    //bonus percent of tokens handed on Day 1 (* 100)
-        uint256 bonusPercentage = startBonusPercentage.sub(100.mul(daysPassed));   //1% decrease in bonusTokens per day
+        daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);     //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
+        uint256 startBonusPercentage = 2500;                            //bonus percent of tokens handed on Day 1 (* 100)
+        uint256 decreaseAmount = 100;                                   //1% decrease in bonusTokens per day
+        uint256 bonusPercentage = startBonusPercentage.sub(decreaseAmount.mul(daysPassed));
         if (bonusPercentage < 0) {
             bonusPercentage = 0;
         }
-        uint256 bonus = rate.mul(bonusPercentage).div(10000);   //divide by 10,000 to convert bonusPercentage to percent 
-        rate = rate.add(bonus);                                 //add bonus tokens to base rate
+        uint256 bonus = rate.mul(bonusPercentage).div(10000);   //divide by 10,000 to convert bonusPercentage to percent
+        rate = rate.add(bonus);                                 //add bonus tokens to base ratee
         return rate;
     }
 
@@ -197,7 +195,7 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         }else if(_state == State.SecondPreSale) {
             return preSale2WeiCollected >= preSale2EthHardCap.mul(1000000000000000000);
         }else if(_state == State.ICO){
-            return ICO_WeiCollected >= ICO_EthHardCap.mul(1000000000000000000);    
+            return ICO_WeiCollected >= ICO_EthHardCap.mul(1000000000000000000);
         }else {
             return false;
         }
@@ -210,8 +208,9 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
     function setState(State newState) public onlyOwner {
         require(state != State.Finished); //if Finished, no state change possible
         if(newState == State.Finished){
-            token.finishMinting();
-            token.transferOwnership(owner);
+            //token.finishMinting();
+            //token.transferOwnership(owner);
+            require(false);
         }else if(newState == State.FirstPreSale && preSale1_startTimestamp == 0) {
             preSale1_startTimestamp = now;
         }else if(newState == State.SecondPreSale && preSale2_startTimestamp == 0) {
@@ -222,8 +221,8 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         state = newState;
     }
     function totalEthRaised() returns(uint256){
-        uint256 totalEthRaised = preSale1WeiCollected.add(preSale2WeiCollected).add(ICO_WeiCollected);   //total wei raised in each round
-        return totalEthRaised;
+        uint256 _totalEthRaised = preSale1WeiCollected.add(preSale2WeiCollected).add(ICO_WeiCollected);   //total wei raised in each round
+        return _totalEthRaised;
     }
     /**
     * @notice Owner can claim collected ether
@@ -234,18 +233,38 @@ contract NigamCrowdsale is Ownable, HasNoTokens{
         owner.transfer(amount);
     }
 
-    function initReserve(uint64[] reserveReleases, uint256[] reserveAmounts, address[] reserveBeneficiaries) internal {
-        require(reserveReleases.length == reserveAmounts.length && reserveReleases.length == reserveBeneficiaries.length);
-        for(uint8 i=0; i < reserveReleases.length; i++){
-            require(reserveReleases[i] > now);
-            require(reserveAmounts[i] > 0);
-            require(reserveBeneficiaries[i] != address(0));
-            TokenTimelock tt = new TokenTimelock(token, reserveBeneficiaries[i], reserveReleases[i]);
-            assert(token.mint(tt, reserveAmounts[i]));
-            TokenTimelockCreated(tt, reserveReleases[i], reserveBeneficiaries[i], reserveAmounts[i]);
-        }
-    }
+    function finishCrowdsale(address[] reserveBeneficiaries, uint64[] reserveReleases, uint8[] reservePercents) onlyOwner public {
+        require(reserveBeneficiaries.length == reserveReleases.length);
+        require(reserveBeneficiaries.length == reservePercents.length);
 
+        uint8 beneficiaryPercent = 0;
+        for(uint8 i=0; i < reservePercents.length; i++){
+            require(reservePercents[i] > 0);
+            require(reservePercents[i] <= 100);
+            beneficiaryPercent += reservePercents[i];
+            require(beneficiaryPercent <= 100);
+        }
+        uint8 ownerPercent2 = 100 - beneficiaryPercent;
+
+        uint256 totalTokens = token.totalSupply().mul(ownersPercent).div(100);
+        for(i=0; i < reserveBeneficiaries.length; i++){
+            uint256 amount = totalTokens.mul(reservePercents[i]).div(100);
+            require(reserveReleases[i] > now);
+            require(reserveBeneficiaries[i] != address(0));
+            //TokenTimelock tt = new TokenTimelock(token, reserveBeneficiaries[i], reserveReleases[i]);
+            TokenTimelockMod tt = new TokenTimelockMod(reserveReleases[i]);
+            tt.transferOwnership(reserveBeneficiaries[i]);
+            assert(token.mint(tt, amount));
+            TokenTimelockCreated(tt, reserveReleases[i], reserveBeneficiaries[i], amount);
+        }
+
+        amount = totalTokens.mul(ownerPercent2).div(100);
+        token.mint(owner, amount);
+
+        token.finishMinting();
+        token.transferOwnership(owner);
+        state = State.Finished;
+    }
 
 }
 

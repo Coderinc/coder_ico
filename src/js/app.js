@@ -1,7 +1,9 @@
 var $ = jQuery;
-var releaseCount = 0;
-var reserveReleases = [];
+var releaseCount;
 var reserveBeneficiaries = [];
+var reserveLockupTimes = [];
+var reservePercents = [];
+
 
 jQuery(document).ready(function($) {
 
@@ -18,11 +20,11 @@ jQuery(document).ready(function($) {
         web3 = loadWeb3();
         if(web3 == null) return;
         //console.log("web3: ",web3);
-        loadContract('../build/contracts/NigamCoin.json', function(data){
+        loadContract('NigamCoin.json', function(data){
             tokenContract = data;
             $('#tokenABI').text(JSON.stringify(data.abi));
         });
-        loadContract('../build/contracts/NigamCrowdsale.json', function(data){
+        loadContract('NigamCrowdsale.json', function(data){
             crowdsaleContract = data;
             $('#crowdsaleABI').text(JSON.stringify(data.abi));
         });
@@ -32,7 +34,6 @@ jQuery(document).ready(function($) {
         let form = $('#publishContractsForm');
         let d = new Date();
         let nowTimestamp = d.setMinutes(0, 0, 0);
-
 
         d = new Date(nowTimestamp+1*60*60*1000);
         $('input[name="startTimePresale1"]', form).val(d.toISOString());
@@ -278,40 +279,53 @@ jQuery(document).ready(function($) {
         var markup = 
         `<tr>
             <td>${releaseCount}</td>
-            <td><input type='text' name='release${releaseCount}' /></td>
             <td><input type='text' name='address${releaseCount}' /></td>
-            <td><input type='text' name='name${releaseCount}' /></td>
+            <td><input type='text' name='lockupTime${releaseCount}' /></td>
+            <td><input type='text' name='percent${releaseCount}' /></td>
         </tr>`;
         $('#lockup_table').append(markup);
     });
 
-    $('#lockup_form').submit((e) => {
-        e.preventDefault();
+    $('#lockup').click(function(){
+
+        let form = $('#lockup_form');
+        let crowdsaleAddress = $('input[name=crowdsaleAddress]', form).val();
+        if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
+        let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
+
+        loadContract('NigamCoin.json', function(data){
+            tokenContract = data;
+            $('#tokenABI').text(JSON.stringify(data.abi));
+        });
+        loadContract('NigamCrowdsale.json', function(data){
+            crowdsaleContract = data;
+            $('#crowdsaleABI').text(JSON.stringify(data.abi));
+        });
 
         var everything = $('#lockup_form').serializeArray();
         console.log(everything);
         console.log("*********");
 
-        var releases = [];
         var benef = [];
-        var names = [];
+        var lockupTimes = [];
+        var percents = [];
 
         everything.forEach(o => {
-            if (/relea/.test(o.name)) releases.push(o.value);
-            if (/add/.test(o.name)) benef.push(o.value);
-            if (/name/.test(o.name)) names.push(o.value);
+            if (/address/.test(o.name)) benef.push(o.value);
+            if (/lockupTime/.test(o.name)) lockupTimes.push(o.value);
+            if (/percent/.test(o.name)) percents.push(o.value);
 
         });
 
-        reserveReleases = releases;
         reserveBeneficiaries = benef;
-        reserveNames = names
+        reserveLockupTimes = lockupTimes;
+        reservePercents = percents
 
-        console.log(reserveReleases);
         console.log(reserveBeneficiaries);
-        console.log(reserveNames);
+        console.log(reserveLockupTimes);
+        console.log(reservePercents);
 
-        crowdsaleInstance.initReserve(reserveBeneficiaries, reserveAmounts,  )
+        crowdsaleInstance.finalizeCrowdsale(reserveBeneficiaries, reserveLockupTimes, reservePercents)
 
     });
 

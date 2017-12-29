@@ -3,6 +3,8 @@ pragma solidity ^0.4.18;
 
 import './zeppelin/token/ERC20Basic.sol';
 import './zeppelin/token/SafeERC20.sol';
+import './zeppelin/ownership/Ownable.sol';
+
 
 /**
  * @title TokenTimelock
@@ -32,21 +34,21 @@ contract TokenTimelockMod is Ownable {
     token.safeTransfer(owner, amount);
   }
 
-  /**
-  * Sample usage
-  */
-  function initReserve(uint64[] reserveReleases, uint256[] reserveAmounts, address[] reserveBeneficiaries) internal {
-      require(reserveReleases.length == reserveAmounts.length && reserveReleases.length == reserveBeneficiaries.length);
-      for(uint8 i=0; i < reserveReleases.length; i++){
-          require(reserveReleases[i] > now);
-          require(reserveAmounts[i] > 0);
-          require(reserveBeneficiaries[i] != address(0));
-          TokenTimelockMod tt = new TokenTimelockMod(reserveReleases[i]);
-          tt.transferOwnership(reserveBeneficiaries[i]);
-          assert(token.mint(tt, reserveAmounts[i]));
-          TokenTimelockCreated(tt, reserveReleases[i], reserveBeneficiaries[i], reserveAmounts[i]);
-      }
-  }
+  // /**
+  // * Sample usage
+  // */
+  // function initReserve(uint64[] reserveReleases, uint256[] reserveAmounts, address[] reserveBeneficiaries) internal {
+  //     require(reserveReleases.length == reserveAmounts.length && reserveReleases.length == reserveBeneficiaries.length);
+  //     for(uint8 i=0; i < reserveReleases.length; i++){
+  //         require(reserveReleases[i] > now);
+  //         require(reserveAmounts[i] > 0);
+  //         require(reserveBeneficiaries[i] != address(0));
+  //         TokenTimelockMod tt = new TokenTimelockMod(reserveReleases[i]);
+  //         tt.transferOwnership(reserveBeneficiaries[i]);
+  //         assert(token.mint(tt, reserveAmounts[i]));
+  //         TokenTimelockCreated(tt, reserveReleases[i], reserveBeneficiaries[i], reserveAmounts[i]);
+  //     }
+  // }
 
 }
 
