@@ -325,7 +325,10 @@ jQuery(document).ready(function($) {
         console.log(reserveLockupTimes);
         console.log(reservePercents);
 
-        crowdsaleInstance.finalizeCrowdsale(reserveBeneficiaries, reserveLockupTimes, reservePercents)
+        //console.log(crowdsaleInstance);
+        crowdsaleInstance.finishCrowdsale(reserveBeneficiaries, reserveLockupTimes, reservePercents, function(error, result){
+            console.log(error,result);
+        });
 
     });
 
@@ -343,7 +346,9 @@ jQuery(document).ready(function($) {
         if(typeof web3.eth.accounts[0] == 'undefined'){
             printError('Please, unlock MetaMask');
             return null;
+        
         }
+        web3.eth.defaultAccount =  web3.eth.accounts[0];
         return web3;
     }
     function loadContract(url, callback){
