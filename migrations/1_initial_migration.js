@@ -1,6 +1,6 @@
 var Migrations = artifacts.require("./Migrations.sol");
-var NigamCoin = artifacts.require("./NigamCoin.sol");
-var NigamCrowdsale = artifacts.require("./NigamCrowdsale.sol");
+var CoderCoin = artifacts.require("./CoderCoin.sol");
+var CoderCrowdsale = artifacts.require("./CoderCrowdsale.sol");
 var oraclizeAPI_mod = artifacts.require("./oraclizeAPI_mod.sol");
 
 module.exports = function(deployer) {
@@ -8,11 +8,11 @@ module.exports = function(deployer) {
 };
 
 module.exports = function(deployer) {
-  deployer.deploy(NigamCoin);
+  deployer.deploy(CoderCoin);
 };
 
 module.exports = function(deployer) {
-  deployer.deploy(NigamCrowdsale);
+  deployer.deploy(CoderCrowdsale);
 };
 
 module.exports = function(deployer) {
