@@ -20,11 +20,11 @@ jQuery(document).ready(function($) {
         web3 = loadWeb3();
         if(web3 == null) return;
         //console.log("web3: ",web3);
-        loadContract('NigamCoin.json', function(data){
+        loadContract('CoderCoin.json', function(data){
             tokenContract = data;
             $('#tokenABI').text(JSON.stringify(data.abi));
         });
-        loadContract('NigamCrowdsale.json', function(data){
+        loadContract('CoderCrowdsale.json', function(data){
             crowdsaleContract = data;
             $('#crowdsaleABI').text(JSON.stringify(data.abi));
         });
@@ -39,10 +39,8 @@ jQuery(document).ready(function($) {
         $('input[name="startTimePresale1"]', form).val(d.toISOString());
         d = new Date(nowTimestamp+2*60*60*1000);
         $('input[name="endTimePresale1"]', form).val(d.toISOString());
-        $('input[name="preSale1BasePriceInWei"]', form).val(3333333333333333);
-        $('input[name="preSale1EthHardCap"]', form).val(1667);
-        $('input[name="preSale2BasePriceInWei"]', form).val(3333333333333333);
-        $('input[name="preSale2EthHardCap"]', form).val(16667);
+        $('input[name="preSaleBasePriceInWei"]', form).val(3333333333333333);
+        $('input[name="preSaleEthHardCap"]', form).val(1667);
         $('input[name="ICO_basePriceInWei"]', form).val(3333333333333333);
         $('input[name="ICO_EthHardCap"]', form).val(166667);
         $('input[name="bonusDecreaseInterval"]', form).val(60*60*24);
@@ -77,23 +75,19 @@ jQuery(document).ready(function($) {
 
         let tokenAddress = $('input[name="tokenAddress"]', form).val();
 
-        let preSale1_startTimestamp = timeStringToTimestamp($('input[name="startTimePresale1"]', form).val());
-        let preSale1_endTimestamp  = timeStringToTimestamp($('input[name="endTimePresale1"]', form).val());
-        let preSale2_startTimestamp = timeStringToTimestamp($('input[name="startTimePresale2"]', form).val());
-        let preSale2_endTimestamp  = timeStringToTimestamp($('input[name="endTimePresale2"]', form).val());
+        let preSale_startTimestamp = timeStringToTimestamp($('input[name="startTimePresale"]', form).val());
+        let preSale_endTimestamp  = timeStringToTimestamp($('input[name="endTimePresale"]', form).val());
         let ICO_startTimestamp = timeStringToTimestamp($('input[name="startTimeICO"]', form).val());
         let ICO_endTimestamp  = timeStringToTimestamp($('input[name="endTimeICO"]', form).val());
-        let preSale1BasePriceInWei = $('input[name="preSale1BasePriceInWei"]', form).val();
-        let preSale1EthHardCap = $('input[name="preSale1EthHardCap"]', form).val();
-        let preSale2BasePriceInWei = $('input[name="preSale2BasePriceInWei"]', form).val();
-        let preSale2EthHardCap = $('input[name="preSale2EthHardCap"]', form).val();
+        let preSaleBasePriceInWei = $('input[name="preSaleBasePriceInWei"]', form).val();
+        let preSaleEthHardCap = $('input[name="preSaleEthHardCap"]', form).val();
         let ICO_basePriceInWei = $('input[name="ICO_basePriceInWei"]', form).val();
         let ICO_EthHardCap = $('input[name="ICO_EthHardCap"]', form).val();
         let bonusDecreaseInterval = $('input[name="bonusDecreaseInterval"]', form).val();
         let ownersPercent  = $('input[name="ownersPercent"]', form).val();
 
         publishContract(crowdsaleContract, 
-            [preSale1BasePriceInWei, preSale1EthHardCap, preSale2BasePriceInWei, preSale2EthHardCap, ICO_basePriceInWei, ICO_EthHardCap, bonusDecreaseInterval, ownersPercent],
+            [preSaleBasePriceInWei, preSaleEthHardCap, ICO_basePriceInWei, ICO_EthHardCap, bonusDecreaseInterval, ownersPercent],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
             }, 
@@ -119,25 +113,17 @@ jQuery(document).ready(function($) {
         if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
         let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
 
-        crowdsaleInstance.preSale1_startTimestamp(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="startTimePresale1"]', form).val(timestampToString(result));
-        });
         crowdsaleInstance.bonusDecreaseInterval(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="bonusDecreaseInterval"]', form).val(result);
         });
-        crowdsaleInstance.preSale1_endTimestamp(function(error, result){
+        crowdsaleInstance.preSale_startTimestamp(function(error, result){
+            if(!!error) console.log('Contract info loading error:\n', error);
+            $('input[name="startTimePresale1"]', form).val(timestampToString(result));
+        });
+        crowdsaleInstance.preSale_endTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="endTimePresale1"]', form).val(timestampToString(result));
-        });
-        crowdsaleInstance.preSale2_startTimestamp(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="startTimePresale2"]', form).val(timestampToString(result));
-        });
-        crowdsaleInstance.preSale2_endTimestamp(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="endTimePresale2"]', form).val(timestampToString(result));
         });
         crowdsaleInstance.ICO_startTimestamp(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
@@ -151,25 +137,17 @@ jQuery(document).ready(function($) {
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="rate"]', form).val(result);
         });
-        crowdsaleInstance.preSale1EthCollected(function(error, result){
+        crowdsaleInstance.preSaleEthCollected(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="preSale1EthCollected"]', form).val(web3.fromWei(result, 'ether'));
-        });
-        crowdsaleInstance.preSale2EthCollected(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="preSale2EthCollected"]', form).val(web3.fromWei(result, 'ether'));
         });
         crowdsaleInstance.ICO_EthCollected(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="ICO_EthCollected"]', form).val(web3.fromWei(result, 'ether'));
         });
-        crowdsaleInstance.preSale1EthHardCap(function(error, result){
+        crowdsaleInstance.preSaleEthHardCap(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="preSale1DollarHardCap"]', form).val(result);
-        });
-        crowdsaleInstance.preSale2EthHardCap(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="preSale2DollarHardCap"]', form).val(result);
         });
         crowdsaleInstance.ICO_EthHardCap(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
@@ -293,11 +271,11 @@ jQuery(document).ready(function($) {
         if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
         let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
 
-        loadContract('NigamCoin.json', function(data){
+        loadContract('CoderCoin.json', function(data){
             tokenContract = data;
             $('#tokenABI').text(JSON.stringify(data.abi));
         });
-        loadContract('NigamCrowdsale.json', function(data){
+        loadContract('CoderCrowdsale.json', function(data){
             crowdsaleContract = data;
             $('#crowdsaleABI').text(JSON.stringify(data.abi));
         });

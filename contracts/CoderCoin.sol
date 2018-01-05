@@ -7,9 +7,9 @@ import './zeppelin/ownership/HasNoEther.sol';
 import './zeppelin/ownership/HasNoContracts.sol';
 import './zeppelin/ownership/HasNoTokens.sol';
 
-contract NigamCoin is MintableToken, BurnableToken, HasNoContracts, HasNoTokens { //MintableToken is StandardToken, Ownable
-    string public symbol = 'NGM';
-    string public name = 'NigamCoin';
+contract CoderCoin is MintableToken, BurnableToken, HasNoContracts, HasNoTokens { //MintableToken is StandardToken, Ownable
+    string public symbol = 'CDR';
+    string public name = 'CoderCoin';
     uint8 public constant decimals = 18;
 
     /**
