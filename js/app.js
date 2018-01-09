@@ -20,11 +20,11 @@ jQuery(document).ready(function($) {
         web3 = loadWeb3();
         if(web3 == null) return;
         //console.log("web3: ",web3);
-        loadContract('CoderCoin.json', function(data){
+        loadContract('./eth/build/contracts/CoderCoin.json', function(data){
             tokenContract = data;
             $('#tokenABI').text(JSON.stringify(data.abi));
         });
-        loadContract('CoderCrowdsale.json', function(data){
+        loadContract('./eth/build/contracts/CoderCrowdsale.json', function(data){
             crowdsaleContract = data;
             $('#crowdsaleABI').text(JSON.stringify(data.abi));
         });
