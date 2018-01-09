@@ -1,4 +1,4 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.4.18;
 
 import './zeppelin/ownership/Ownable.sol';
 import './CoderCoin.sol';
@@ -22,7 +22,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     uint256   public ICO_WeiCollected;              //how much wei already collected at main sale
     uint256   public ICO_endTimestamp;              //when Presale 2 ends uint256 public
     uint256   public bonusDecreaseInterval;         //seconds before bonus decreases uint32
-    uint256   public daysPassed;                    //days passed since ICO start datetime (86,400 sec/day)
+    //uint256   public daysPassed;                    //days passed since ICO start datetime (86,400 sec/day)
 
     uint8     public ownersPercent;                 //percent of tokens that will be minted to owner
 
@@ -45,11 +45,11 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     event TokenTimelockCreated(address TokenTimelock, uint64 releaseTimestamp, address beneficiary, uint256 amount);
 
 
-    function CoderCrowdsale(
+    function CoderCrowdsale (
         uint256 _preSaleBasePriceInWei, uint256 _preSaleEthHardCap,
         uint256 _ICO_basePriceInWei, uint256 _ICO_EthHardCap, uint256 _bonusDecreaseInterval,
         uint8 _ownersPercent
-        ){
+        ) public {
         state = State.Paused;
         preSaleBasePriceInWei = _preSaleBasePriceInWei;
         preSaleEthHardCap = _preSaleEthHardCap;
@@ -63,7 +63,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     /**
     * @notice To buy tokens just send ether here
     */
-    function() payable {
+    function() payable public {
         require(msg.value > 0);
         require(crowdsaleOpen());
         uint256 rate = currentRate(msg.value);
@@ -85,7 +85,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     /**
     * @notice Check if crowdsale is open or not
     */
-    function crowdsaleOpen() constant returns(bool){
+    function crowdsaleOpen() constant public returns(bool){
         return  (state != State.Paused) &&
                 (state != State.Finished) &&
                 !hardCapReached(state);
@@ -108,23 +108,24 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         return rate;
     }
 
-    function calculatePreSaleRate(uint256 etherAmount, uint256 basePriceWei) constant returns(uint256) {
+    function calculatePreSaleRate(uint256 etherAmount, uint256 basePriceWei) constant public returns(uint256) {
         require(etherAmount >= 100 finney);                     //minimum contribution 0.1 ETH
         uint256 rate = etherAmount.div(basePriceWei);           //convert etherAmount to wei and divide by price per token (in wei)
         uint8 bonusPercentage;                                  //baseTokens awarded as bonus
-        if(this.balance < 500 ether) {                          
+        uint256 totalWeiCollected = totalEthRaised();
+        if(totalWeiCollected < 500 ether) {                          
             bonusPercentage = 75;                               //75% bonus tokens awarded for first 500 ETH
         }
-        else if(this.balance < 1000 ether) {
+        else if(totalWeiCollected < 1000 ether) {
             bonusPercentage = 50;                               //50% bonus tokens awarded for next 500 ETH (total 1000 ETH)
         }
-        else if(this.balance < 2000 ether) {
+        else if(totalWeiCollected < 2000 ether) {
             bonusPercentage = 45;                               //45% bonus tokens awarded for next 1000 ETH (total 2000 ETH)
         }
-        else if(this.balance < 3000 ether) {
+        else if(totalWeiCollected < 3000 ether) {
             bonusPercentage = 40;                               //40% bonus tokens awarded for next 1000 ETH (total 3000 ETH)
         }
-        else if(this.balance < 4000 ether) {
+        else if(totalWeiCollected < 4000 ether) {
             bonusPercentage = 35;                               //35% bonus tokens awarded for next 1000 ETH (total 4000 ETH)
         }
         else {
@@ -135,12 +136,12 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         return rate;
     }
 
-    function calculateICOrate(uint256 etherAmount, uint256 basePriceWei) constant returns(uint256){
+    function calculateICOrate(uint256 etherAmount, uint256 basePriceWei) constant public returns(uint256){
         if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
         require(etherAmount >= 100 finney);                             //minimum contribution 0.1 ETH
         uint256 rate = etherAmount.div(basePriceWei);                   //convert etherAmount to wei and divide by price per token (in wei)
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
-        daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);     //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
+        uint256 daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);     //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
         uint256 startBonusPercentage = 2500;                            //bonus percent of tokens handed on Day 1 (* 100)
         uint256 decreaseAmount = 100;                                   //1% decrease in bonusTokens per day
         uint256 bonusPercentage = startBonusPercentage.sub(decreaseAmount.mul(daysPassed));
@@ -152,7 +153,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         return rate;
     }
 
-    function hardCapReached(State _state) constant returns(bool){
+    function hardCapReached(State _state) constant public returns(bool){
         if(_state == State.PreSale) {
             return preSaleWeiCollected >= preSaleEthHardCap.mul(1000000000000000000);
         }else if(_state == State.ICO){
@@ -180,17 +181,16 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         state = newState;
     }
 
-    function totalEthRaised() returns(uint256){
-        uint256 _totalEthRaised = preSaleWeiCollected.add(ICO_WeiCollected);   //total wei raised in each round
-        return _totalEthRaised;
+    function totalEthRaised() constant public returns(uint256){
+        return preSaleWeiCollected.add(ICO_WeiCollected);   //total wei raised in each round
     }
     /**
     * @notice Owner can claim collected ether
-    * @param amount How much ether to take. Please leave enough ether for price updates
     */
-    function claim(uint256 amount) onlyOwner {
-        require(this.balance >= amount);
-        owner.transfer(amount);
+    function claimCollectedEther() onlyOwner public {
+        if(this.balance > 0){
+            owner.transfer(this.balance);    
+        }
     }
 
     function finishCrowdsale(address[] reserveBeneficiaries, uint64[] reserveReleases, uint8[] reservePercents) onlyOwner public {
