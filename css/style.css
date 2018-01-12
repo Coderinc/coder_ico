@@ -1,8 +1,13 @@
 body{padding:20px}
 	.error{color:red}input.ethAddress,input.ethTx{width:30em}input:read-only{background-color:#e0e0e0;width:200px;}.abi{display:block;width:100%;height:3em}
-.table {
-	border: 1px solid black;
+
+table.withBorders {
+    border-collapse:  collapse;
 }
+table.withBorders td, table.withBorders th{
+    border: 1px solid black;
+}
+
 .th {
 	text-align: left;
 }
@@ -14,4 +19,10 @@ body{padding:20px}
 	border: 1px solid black;
 	width: 800px;
 	padding: 10px;
+}
+#lockup_table td {
+    text-align: center;
+}
+input.ethAddress {
+    width: 30em;
 }

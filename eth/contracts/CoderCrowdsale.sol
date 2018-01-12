@@ -6,7 +6,6 @@ import './TokenTimelockMod.sol';
 
 contract CoderCrowdsale is Ownable, HasNoTokens{
     using SafeMath for uint256;
-    using SafeMath for uint8;
 
     CoderCoin public token;                         //token for crowdsale
 
