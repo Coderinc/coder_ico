@@ -11,6 +11,8 @@ jQuery(document).ready(function($) {
     let tokenContract = null;
     let crowdsaleContract = null;
 
+    let ethereumPrice = null;
+
 
     setTimeout(init, 1000);
     //$(window).on("load", init);
@@ -50,6 +52,12 @@ jQuery(document).ready(function($) {
 
         web3.eth.getBlock('latest', function(error, result){
             console.log('Current latest block: #'+result.number+' '+timestampToString(result.timestamp), result);
+        });
+        $.ajax('https://api.coinmarketcap.com/v1/ticker/ethereum/', {'dataType':'json', 'cache':'false', 'data':{'t':Date.now()}})
+        .done(function(result){
+            console.log('Ethereum ticker from CoinMarketCap:', result);
+            ethereumPrice = Number(result[0].price_usd);
+            $('#ethereumPrice').html(ethereumPrice);
         });
     };
     function initManageForm(){
@@ -98,6 +106,18 @@ jQuery(document).ready(function($) {
                 $('#loadCrowdsaleInfo').click();
             }
         );
+    });
+    function setCDRPriceSpanText($span, rate){
+        let price = tokenRateToUSDPrice(rate, ethereumPrice);
+        $span.html('(1 CDR = '+price+' USD)')
+    }
+    $('input[name=preSale_baseRate]', '#publishContractsForm').change(function(){
+        if(ethereumPrice == null) return;
+        setCDRPriceSpanText($('#publish_preSale_basePrice'), $(this).val());
+    });
+    $('input[name=ICO_baseRate]', '#publishContractsForm').change(function(){
+        if(ethereumPrice == null) return;
+        setCDRPriceSpanText($('#publish_ICO_basePrice'), $(this).val());
     });
 
 
@@ -173,6 +193,7 @@ jQuery(document).ready(function($) {
         crowdsaleInstance.currentRate(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             $('input[name="currentRate"]', form).val(result);
+            setCDRPriceSpanText($('#manage_currentRate_price'), result);
         });
         crowdsaleInstance.totalCollected(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
@@ -406,5 +427,8 @@ jQuery(document).ready(function($) {
         let params = window.location.search.substr(1).split('&').map(function(item){return item.split("=").map(decodeURIComponent);});
         let found = params.find(function(item){return item[0] == name});
         return (typeof found == "undefined")?null:found[1];
+    }
+    function tokenRateToUSDPrice(rate, ethPrice){
+        return Math.round(10000 * ethPrice / rate)/10000;
     }
 });

@@ -17,7 +17,8 @@
 <body>
 <h1>ICO Admin Panel</h1>
 <div class="error" id="errormsg"></div>
-<h3>Current Time:</h3><input type="text" id="clock" name="clock" value="" readonly class="time">(Z = UTC timezone, ISO8601 format)
+<div>Current Time: <input type="text" id="clock" name="clock" value="" readonly class="time">(Z = UTC timezone, ISO8601 format)</div>
+<div>Ethereum price: 1 ETH = <span id="ethereumPrice">...</span> USD</div>
 <h2>0. Load contracts</h2>
 <form id="loadContractsForm">
     <label for="tokenABI">Token ABI:
@@ -35,9 +36,9 @@
 <h3>1. Publish Contract</h3>
 <form id="publishContractsForm">
     <table class="withBorders">
-        <tr><td>PreSale base rate:</td><td><input type="number" name="preSale_baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
+        <tr><td>PreSale base rate:</td><td><input type="number" name="preSale_baseRate" value="" class="number"></td><td>CDR = 1 ETH <span id="publish_preSale_basePrice"></span></td></tr>
         <tr><td>PreSale Hard Cap:</td><td><input type="number" name="preSale_hardCap" value="" class="number"></td><td>ETH</td></tr>
-        <tr><td>ICO base rate:</td><td><input type="number" name="ICO_baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
+        <tr><td>ICO base rate:</td><td><input type="number" name="ICO_baseRate" value="" class="number"></td><td>CDR = 1 ETH <span id="publish_ICO_basePrice"></span></td></tr>
         <tr><td>ICO Hard Cap:</td><td><input type="number" name="ICO_hardCap" value="" class="number"></td><td>ETH</td></tr>
         <tr><td>Max ICO Bonus:</td><td><input type="number" name="ICO_bonusStartPercent" value="" class="number"></td><td>%</td></tr>
         <tr><td>ICO Bonus Decrease Interval:</td><td><input type="number" name="ICO_bonusDecreaseInterval" value="" class="number"></td><td>seconds</td></tr>
@@ -79,7 +80,7 @@
             </select>
             <input type="button" name="setState" id="setState" value="Set state">
         </td></tr>
-        <tr><td>Current rate:</td><td><input readonly type="text" name="currentRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
+        <tr><td>Current rate:</td><td><input readonly type="text" name="currentRate" value="" class="number"></td><td>CDR = 1 ETH <span id="manage_currentRate_price"></span></td></tr>
         <tr><td>Total collected:</td><td><input readonly type="text" name="totalCollected" value="" class="number"></td><td>ETH</td></tr>
         <tr><td>Current ballance:</td><td><input readonly type="text" name="balance" value="" class="number"></td><td>ETH</td></tr>
 
