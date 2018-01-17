@@ -37,15 +37,14 @@ jQuery(document).ready(function($) {
         let nowTimestamp = d.setMinutes(0, 0, 0);
 
         d = new Date(nowTimestamp+1*60*60*1000);
-        $('input[name="startTimePresale1"]', form).val(d.toISOString());
-        d = new Date(nowTimestamp+2*60*60*1000);
-        $('input[name="endTimePresale1"]', form).val(d.toISOString());
-        $('input[name="preSaleBasePriceInWei"]', form).val(3333333333333333);
-        $('input[name="preSaleEthHardCap"]', form).val(1667);
-        $('input[name="ICO_basePriceInWei"]', form).val(3333333333333333);
-        $('input[name="ICO_EthHardCap"]', form).val(166667);
-        $('input[name="bonusDecreaseInterval"]', form).val(60*60*24);
-        $('input[name="ownersPercent"]', form).val(100);
+        $('input[name="preSale_baseRate"]', form).val(2000);
+        $('input[name="preSale_hardCap"]', form).val(10000);
+        $('input[name="ICO_baseRate"]', form).val(1000);
+        $('input[name="ICO_hardCap"]', form).val(20000);
+        $('input[name="ICO_bonusStartPercent"]', form).val(25);
+        $('input[name="ICO_bonusDecreaseInterval"]', form).val(60*60*24);
+        $('input[name="ICO_bonusDecreasePercent"]', form).val(1);
+        $('input[name="foundersPercent"]', form).val(100);
 
         setInterval(function(){$('#clock').val( (new Date()).toISOString() )}, 1000);
 
@@ -61,20 +60,6 @@ jQuery(document).ready(function($) {
             setTimeout(function(){$('#loadCrowdsaleInfo').click();}, 100);
         }
     }
-    // $('#publishToken').click(function(){
-    //     if(tokenContract == null) return;
-    //     printError('');
-    //     let form = $('#publishContractsForm');
-
-    //     publishContract(tokenContract,[],
-    //         function(tx){
-    //             $('input[name="publishedTx"]',form).val(tx);
-    //         }, 
-    //         function(contract){
-    //                 $('input[name="tokenAddress"]',form).val(contract.address);
-    //         }
-    //     );
-    // });
 
     $('#publishContracts').click(function(){
         if(crowdsaleContract == null) return;
@@ -83,19 +68,23 @@ jQuery(document).ready(function($) {
 
         let tokenAddress = $('input[name="tokenAddress"]', form).val();
 
-        let preSale_startTimestamp = timeStringToTimestamp($('input[name="startTimePresale"]', form).val());
-        let preSale_endTimestamp  = timeStringToTimestamp($('input[name="endTimePresale"]', form).val());
-        let ICO_startTimestamp = timeStringToTimestamp($('input[name="startTimeICO"]', form).val());
-        let ICO_endTimestamp  = timeStringToTimestamp($('input[name="endTimeICO"]', form).val());
-        let preSaleBasePriceInWei = $('input[name="preSaleBasePriceInWei"]', form).val();
-        let preSaleEthHardCap = $('input[name="preSaleEthHardCap"]', form).val();
-        let ICO_basePriceInWei = $('input[name="ICO_basePriceInWei"]', form).val();
-        let ICO_EthHardCap = $('input[name="ICO_EthHardCap"]', form).val();
-        let bonusDecreaseInterval = $('input[name="bonusDecreaseInterval"]', form).val();
-        let ownersPercent  = $('input[name="ownersPercent"]', form).val();
+        let preSale_baseRate = $('input[name="preSale_baseRate"]', form).val();
+        let preSale_hardCap = web3.toWei($('input[name="preSale_hardCap"]', form).val(), 'ether');
+        let ICO_baseRate = $('input[name="ICO_baseRate"]', form).val();
+        let ICO_hardCap = web3.toWei($('input[name="ICO_hardCap"]', form).val(), 'ether');
+        
+        let ICO_bonusStartPercent = $('input[name="ICO_bonusStartPercent"]', form).val();
+        let ICO_bonusDecreaseInterval = $('input[name="ICO_bonusDecreaseInterval"]', form).val();
+        let ICO_bonusDecreasePercent = $('input[name="ICO_bonusDecreasePercent"]', form).val();
+
+        let foundersPercent  = $('input[name="foundersPercent"]', form).val();
 
         publishContract(crowdsaleContract, 
-            [preSaleBasePriceInWei, preSaleEthHardCap, ICO_basePriceInWei, ICO_EthHardCap, bonusDecreaseInterval, ownersPercent],
+            [
+                preSale_baseRate, preSale_hardCap, ICO_baseRate, ICO_hardCap, 
+                ICO_bonusStartPercent, ICO_bonusDecreaseInterval, ICO_bonusDecreasePercent,
+                foundersPercent
+            ],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
             }, 
@@ -106,7 +95,7 @@ jQuery(document).ready(function($) {
                     if(!!error) console.log('Can\'t get token address.\n', error);
                     $('input[name="tokenAddress"]',form).val(result);
                 });
-                $('input[name="balance"]', '#manageCrowdsale').val(contract.balance);
+                $('#loadCrowdsaleInfo').click();
             }
         );
     });
@@ -128,19 +117,18 @@ jQuery(document).ready(function($) {
             }else{
                 $('input[name="preSale_startTimestamp"]', form).val('not defined');
             }
-            
         });
-        crowdsaleInstance.preSale_endTimestamp(function(error, result){
+        crowdsaleInstance.preSale_baseRate(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            if(result > 0){
-                $('input[name="preSale_endTimestamp"]', form).val(timestampToString(result));
-            }else{
-                $('input[name="preSale_endTimestamp"]', form).val('not defined');
-            }
+            $('input[name="preSale_baseRate"]', form).val(result);
         });
-        crowdsaleInstance.preSaleEthHardCap(function(error, result){
+        crowdsaleInstance.preSale_hardCap(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="preSaleEthHardCap"]', form).val(result);
+            $('input[name="preSale_hardCap"]', form).val(web3.fromWei(result, 'ether'));
+        });
+        crowdsaleInstance.preSale_collected(function(error, result){
+            if(!!error) console.log('Contract info loading error:\n', error);
+            $('input[name="preSale_collected"]', form).val(web3.fromWei(result, 'ether'));
         });
 
         crowdsaleInstance.ICO_startTimestamp(function(error, result){
@@ -151,49 +139,52 @@ jQuery(document).ready(function($) {
                 $('input[name="ICO_startTimestamp"]', form).val('not defined');
             }
         });
-        crowdsaleInstance.ICO_endTimestamp(function(error, result){
+        crowdsaleInstance.ICO_baseRate(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            if(result > 0){
-                $('input[name="ICO_endTimestamp"]', form).val(timestampToString(result));
-            }else{
-                $('input[name="ICO_endTimestamp"]', form).val('not defined');
-            }
+            $('input[name="ICO_baseRate"]', form).val(result);
         });
-        crowdsaleInstance.ICO_EthHardCap(function(error, result){
+        crowdsaleInstance.ICO_hardCap(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="ICO_EthHardCap"]', form).val(result);
+            $('input[name="ICO_hardCap"]', form).val(web3.fromWei(result, 'ether'));
+        });
+        crowdsaleInstance.ICO_collected(function(error, result){
+            if(!!error) console.log('Contract info loading error:\n', error);
+            $('input[name="ICO_collected"]', form).val(web3.fromWei(result, 'ether'));
         });
 
-        crowdsaleInstance.bonusDecreaseInterval(function(error, result){
+        crowdsaleInstance.ICO_bonusStartPercent(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="bonusDecreaseInterval"]', form).val(result);
+            $('input[name="ICO_bonusStartPercent"]', form).val(result);
         });
-        crowdsaleInstance.ownersPercent(function(error, result){
+        crowdsaleInstance.ICO_bonusDecreaseInterval(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="ownersPercent"]', form).val(result);
+            $('input[name="ICO_bonusDecreaseInterval"]', form).val(result);
         });
-/*
-        crowdsaleInstance.rate(function(error, result){             //currentRate function from contract
+        crowdsaleInstance.ICO_bonusDecreasePercent(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="rate"]', form).val(result);
+            $('input[name="ICO_bonusDecreasePercent"]', form).val(result);
         });
-        crowdsaleInstance.preSaleEthCollected(function(error, result){
+
+        crowdsaleInstance.foundersPercent(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="preSale1EthCollected"]', form).val(web3.fromWei(result, 'ether'));
+            $('input[name="foundersPercent"]', form).val(result);
         });
-        crowdsaleInstance.ICO_EthCollected(function(error, result){
+
+        crowdsaleInstance.currentRate(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="ICO_EthCollected"]', form).val(web3.fromWei(result, 'ether'));
+            $('input[name="currentRate"]', form).val(result);
         });
-        crowdsaleInstance.getBalance(crowdsaleAddress, function(error, result){
+        crowdsaleInstance.totalCollected(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="balance"]', form).val(web3.fromWei(result, 'ether'));
+            $('input[name="totalCollected"]', form).val(result);
         });
-        crowdsaleInstance.token(function(error, result){
+
+        web3.eth.getBalance(crowdsaleAddress, function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="tokenAddress"]', form).val(result);
+            $('input[name=balance]', form).val(web3.fromWei(result, 'ether'));
         });
-*/        
+
+
         crowdsaleInstance.state(function(error, result){
             if(!!error) console.log('Contract info loading error:\n', error);
             let state = Number(result);
@@ -212,6 +203,8 @@ jQuery(document).ready(function($) {
                 }
             }
         });        
+
+
     });
     $('#setState').click(function(){
         if(crowdsaleContract == null) return;
@@ -226,72 +219,13 @@ jQuery(document).ready(function($) {
         crowdsaleInstance.setState(newState, function(error, tx){
             if(!!error) console.log('Contract info loading error:\n', error);
             console.log('State change transaction published. Tx: '+tx);
-
-            let receipt;
-            let timer = setInterval(function(){
-                web3.eth.getTransactionReceipt(tx, function(error2, result2){
-                    if(!!error2) {
-                        console.error('Can\'t get receipt for tx '+result.transactionHash+'.\n', error2, result2);
-                        return;
-                    }
-                    if(result2 != null){
-                        clearInterval(timer);
-                        if(typeof receipt !== 'undefined') return; //already executed;
-                        receipt = result2;
-                         $('#loadCrowdsaleInfo').click();
-                    }
-                });
-            }, 1000);
-
+            waitTxReceipt(tx, function(receipt){
+                console.log('State change tx mined', receipt);
+                $('#loadCrowdsaleInfo').click();
+            });
         });
     });
     
-
-    // $('#switchState1').click(function(){
-    //     if(crowdsaleContract == null) return;
-    //     printError('');
-    //     let form = $('#manageCrowdsale');
-
-    //     crowdsaleInstance.setState(1, function (error, result){
-    //         if(!!error){
-    //             console.log('Can\'t switch state to Presale Round 1:\n', error);
-    //             printError(error.message.substr(0,error.message.indexOf("\n")));
-    //             return;
-    //         }
-    //         console.log('State:', result);
-    //         $('#loadCrowdsaleInfo').click();
-    //     });
-    // })
-    // $('#switchState2').click(function(){
-    //     if(crowdsaleContract == null) return;
-    //     printError('');
-    //     let form = $('#manageCrowdsale');
-
-    //     crowdsaleInstance.setState(2, function (error, result){
-    //         if(!!error){
-    //             console.log('Can\'t switch state to Presale Round 2:\n', error);
-    //             printError(error.message.substr(0,error.message.indexOf("\n")));
-    //             return;
-    //         }
-    //         console.log('State:', result);
-    //         $('#loadCrowdsaleInfo').click();
-    //     });
-    // })
-    // $('#switchState3').click(function(){
-    //     if(crowdsaleContract == null) return;
-    //     printError('');
-    //     let form = $('#manageCrowdsale');
-
-    //     crowdsaleInstance.setState(3, function (error, result){
-    //         if(!!error){
-    //             console.log('Can\'t switch state to ICO Round:\n', error);
-    //             printError(error.message.substr(0,error.message.indexOf("\n")));
-    //             return;
-    //         }
-    //         console.log('State:', result);
-    //         $('#loadCrowdsaleInfo').click();
-    //     });
-    // })
     $('#crowdsaleClaim').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
@@ -308,27 +242,10 @@ jQuery(document).ready(function($) {
                 return;
             }
             console.log('Claim tx:', tx);
-            $('#loadCrowdsaleInfo').click();
-        });
-
-    });
-    $('#crowdsaleFinalize').click(function(){
-        if(crowdsaleContract == null) return;
-        printError('');
-        let form = $('#manageCrowdsale');
-
-        let crowdsaleAddress = $('input[name=crowdsaleAddress]', form).val();
-        if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
-        let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
-
-        crowdsaleInstance.finalizeCrowdsale(function(error, tx){
-            if(!!error){
-                console.log('Can\'t execute finalizeCrowdsale:\n', error);
-                printError(error.message.substr(0,error.message.indexOf("\n")));
-                return;
-            }
-            console.log('FinalizeCrowdsale tx:', tx);
-            $('#loadCrowdsaleInfo').click();
+            waitTxReceipt(tx, function(receipt){
+                console.log('Claim tx mined', receipt);
+                $('#loadCrowdsaleInfo').click();
+            });
         });
 
     });
@@ -345,7 +262,7 @@ jQuery(document).ready(function($) {
         $('#lockup_table tbody').append(markup);
     });
 
-    $('#lockup').click(function(){
+    $('#finishCrowdsale').click(function(){
         if(crowdsaleContract == null) return;
 
         let form = $('#lockup_form');
@@ -375,7 +292,16 @@ jQuery(document).ready(function($) {
         console.log('Lockup arguments',reserveBeneficiaries, reserveLockupTimes, reservePercents);
 
         crowdsaleInstance.finishCrowdsale(reserveBeneficiaries, reserveLockupTimes, reservePercents, function(error, result){
-            console.log(error,result);
+            if(!!error){
+                console.log('Can\'t execute finishCrowdsale:\n', error);
+                printError(error.message.substr(0,error.message.indexOf("\n")));
+                return;
+            }
+            console.log('FinishCrowdsale tx:', tx);
+            waitTxReceipt(tx, function(receipt){
+                console.log('FinishCrowdsale tx mined', receipt);
+                $('#loadCrowdsaleInfo').click();
+            });
         });
 
     });
@@ -433,26 +359,31 @@ jQuery(document).ready(function($) {
             if(typeof txCallback == 'function'){
                 txCallback(result.transactionHash);
             }
-            let receipt; 
-            let timer = setInterval(function(){
-                web3.eth.getTransactionReceipt(result.transactionHash, function(error2, result2){
-                    if(!!error2) {
-                        console.error('Can\'t get receipt for tx '+result.transactionHash+'.\n', error2, result2);
-                        return;
-                    }
-                    if(result2 != null){
-                        clearInterval(timer);
-                        if(typeof receipt !== 'undefined') return; //already executed;
-                        receipt = result2;
-                        let contract = contractObj.at(receipt.contractAddress);
-                        console.log('Contract mined at: ' + receipt.contractAddress + ', tx: ' + result.transactionHash+'\n', 'Receipt:\n', receipt,  'Contract:\n',contract);
-                        if(typeof publishedCallback === 'function') publishedCallback(contract);
-                    }
-                });
-            }, 1000);
+            waitTxReceipt(result.transactionHash, function(receipt){
+                let contract = contractObj.at(receipt.contractAddress);
+                console.log('Contract mined at: ' + receipt.contractAddress + ', tx: ' + result.transactionHash+'\n', 'Receipt:\n', receipt,  'Contract:\n',contract);
+                if(typeof publishedCallback === 'function') publishedCallback(contract);
+            });
         }else{
             console.error('Unknown error. Result: ', result);
         }
+    }
+    function waitTxReceipt(tx, callback){
+        let receipt; 
+        let timer = setInterval(function(){
+            web3.eth.getTransactionReceipt(tx, function(error, result){
+                if(!!error) {
+                    console.error('Can\'t get receipt for tx '+tx+'.\n', error, result);
+                    return;
+                }
+                if(result != null){
+                    clearInterval(timer);
+                    if(typeof receipt !== 'undefined') return; //already executed;
+                    receipt = result;
+                    callback(receipt);
+                }
+            });
+        }, 1000);
     }
 
     function timeStringToTimestamp(str){

@@ -23,6 +23,6 @@ table.withBorders td, table.withBorders th{
 #lockup_table td {
     text-align: center;
 }
-input.ethAddress {
+input.ethAddress, input.ethTx {
     width: 30em;
 }

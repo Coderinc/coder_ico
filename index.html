@@ -35,12 +35,14 @@
 <h3>1. Publish Contract</h3>
 <form id="publishContractsForm">
     <table class="withBorders">
-        <tr><td>Presale Price per Token:</td><td><input type="text" name="preSaleBasePriceInWei" value="" class="number"></td><td>in wei</td></tr>
-        <tr><td>Presale Hard Cap:</td><td><input type="text" name="preSaleEthHardCap" value="" class="number"></td><td>ETH</td></tr>
-        <tr><td>ICO Price per Token:</td><td><input type="text" name="ICO_basePriceInWei" value="" class="number"></td><td>in wei</td></tr>
-        <tr><td>ICO Hard Cap:</td><td><input type="text" name="ICO_EthHardCap" value="" class="number"></td><td>ETH</td></tr>
-        <tr><td>Bonus Decrease Interval:</td><td><input type="text" name="bonusDecreaseInterval" value="" class="number"></td><td>seconds</td></tr>
-        <tr><td>Owner Tokens Minted (as % of Buyer Tokens):</td><td><input type="text" name="ownersPercent" value="" class="number"></td><td>% (100% = 50% of Reserve)</td></tr>
+        <tr><td>PreSale base rate:</td><td><input type="number" name="preSale_baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
+        <tr><td>PreSale Hard Cap:</td><td><input type="number" name="preSale_hardCap" value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>ICO base rate:</td><td><input type="number" name="ICO_baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
+        <tr><td>ICO Hard Cap:</td><td><input type="number" name="ICO_hardCap" value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>Max ICO Bonus:</td><td><input type="number" name="ICO_bonusStartPercent" value="" class="number"></td><td>%</td></tr>
+        <tr><td>ICO Bonus Decrease Interval:</td><td><input type="number" name="ICO_bonusDecreaseInterval" value="" class="number"></td><td>seconds</td></tr>
+        <tr><td>ICO Bonus Decrease Percent:</td><td><input type="number" name="ICO_bonusDecreasePercent" value="" class="number"></td><td>%</td></tr>
+        <tr><td>Founders Tokens:</td><td><input type="number" name="foundersPercent" value="" class="number"></td><td>% (100% means half of all tokens will be minted to Founder and TokenTimelock contracts)</td></tr>
     </table>
     <div><input type="button" id="publishContracts" value="Publish Crowdsale"></div>
     <br>
@@ -54,17 +56,20 @@
     <div>Crowdsale: <input type="text" name="crowdsaleAddress" value="" class="ethAddress"><input type="button" id="loadCrowdsaleInfo" value="Load Info"></div>
     <table class="withBorders">
         <tr><td>Presale Start:</td><td><input readonly type="text" name="preSale_startTimestamp" value="" class="number"></td><td></td></tr>
-        <tr><td>Presale End:</td><td><input readonly type="text" name="preSale_endTimestamp" value="" class="number"></td><td></td></tr>
-        <tr><td>Presale Price per Token:</td><td><input readonly type="text" name="preSaleBasePriceInWei" value="" class="number"></td><td>in wei</td></tr>
-        <tr><td>Presale Hard Cap:</td><td><input readonly type="text" name="preSaleEthHardCap" value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>Presale base rate:</td><td><input readonly type="text" name="preSale_baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
+        <tr><td>Presale Hard Cap:</td><td><input readonly type="text" name="preSale_hardCap" value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>Presale collected:</td><td><input readonly type="text" name="preSale_collected" value="" class="number"></td><td>ETH</td></tr>
 
         <tr><td>ICO Start:</td><td><input readonly type="text" name="ICO_startTimestamp" value="" class="number"></td><td></td></tr>
-        <tr><td>ICO End:</td><td><input readonly type="text" name="ICO_endTimestamp" value="" class="number"></td><td></td></tr>
-        <tr><td>ICO Price per Token:</td><td><input readonly type="text" name="ICO_basePriceInWei" value="" class="number"></td><td>in wei</td></tr>
-        <tr><td>ICO Hard Cap:</td><td><input readonly type="text" name="ICO_EthHardCap" value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>ICO base rate:</td><td><input readonly type="text" name="ICO_baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
+        <tr><td>ICO Hard Cap:</td><td><input readonly type="text" name="ICO_hardCap" value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>ICO collected:</td><td><input readonly type="text" name="preSale_collected" value="" class="number"></td><td>ETH</td></tr>
 
-        <tr><td>Bonus Decrease Interval:</td><td><input readonly type="text" name="bonusDecreaseInterval" value="" class="number"></td><td>seconds</td></tr>
-        <tr><td>Owner Tokens Minted (as % of Buyer Tokens):</td><td><input readonly type="text" name="ownersPercent" value="" class="number"></td><td>% (100% = 50% of Reserve)</td></tr>
+        <tr><td>Max ICO Bonus:</td><td><input type="text" readonly name="ICO_bonusStartPercent" value="" class="number"></td><td>%</td></tr>
+        <tr><td>ICO Bonus Decrease Interval:</td><td><input type="text" readonly name="ICO_bonusDecreaseInterval" value="" class="number"></td><td>seconds</td></tr>
+        <tr><td>ICO Bonus Decrease Percent:</td><td><input type="text" readonly name="ICO_bonusDecreasePercent" value="" class="number"></td><td>%</td></tr>
+
+        <tr><td>Founders Tokens:</td><td><input readonly type="text" name="foundersPercent" value="" class="number"></td><td>%</td></tr>
 
         <tr><td>State:</td><td><input readonly type="text" name="contractState" value="" class="text"></td><td>
             <select name="newState">
@@ -74,129 +79,32 @@
             </select>
             <input type="button" name="setState" id="setState" value="Set state">
         </td></tr>
+        <tr><td>Current rate:</td><td><input readonly type="text" name="currentRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
+        <tr><td>Total collected:</td><td><input readonly type="text" name="totalCollected" value="" class="number"></td><td>ETH</td></tr>
+        <tr><td>Current ballance:</td><td><input readonly type="text" name="balance" value="" class="number"></td><td>ETH</td></tr>
+
+
     </table>
 
 </form>
 
 <h3>3. Finish ICO</h3>
-<form id="lockup_form">
+<form id="finishCrowdsale">
     <label>Crowdsale: <input type="text" name="crowdsaleAddress" value="" class="ethAddress"></label>
     <table id="lockup_table">
         <thead><tr>
             <th>#</th>
             <th>Beneficiaries (Wallet Addresses)</th>
-            <th>Lockup Period (Time in Sec)</th>
+            <th>Lockup Release (Unix Timestamp)</th>
             <th>Percentages %</th>
         </tr></thead>
         <tbody></tbody>
     </table>
     <div><input type="button" id="add-row" value="Add Row"></div>
-    <div><input type="button" id="lockup" value="Lockup"></div>
-</form>
-<!-- <br>
-<hr>
-<h2>Presale Round 1</h2>
-<h3>2. Start Round</h3>
-<form id="publishContractsForm">
-    <table>
-        <tr><td>Start time:</td><td><input type="text" name="startTimePresale1" value="" class="time"></td><td></td></tr>
-        <tr><td>End time:</td><td><input type="text" name="endTimePresale1" value="" class="time"></td><td></td></tr>
-    </table>
-    <div><input type="button" id="switchState1" value="Start"></div>
-    <br>
-    <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
-    <div><label>Crowdsale Published at: <input type="text" readonly name="publishedAddress" value="" class="ethAddress"></label></div>
-    <div><label>Token Published at: <input type="text" readonly name="tokenAddress" value="" class="ethAddress"></label></div>
+    <div><input type="button" id="finishCrowdsale" value="Finish Crowdsale and send Founders tokens"></div>
 </form>
 
-<h3>3. Manage Presale Round 1 </h3>
-<form id="manageCrowdsale1">
-    <div><label>Crowdsale at: <input type="text" name="crowdsaleAddress" value="" class="ethAddress"></label></div>
-    <div><input type="button" id="loadCrowdsaleInfo" value="Load info"></div>
-    <table>
-        <tr><td>Start time:</td><td><input type="text" name="startTimePresale1" readonly value="" class="time"></td><td></td></tr>
-        <tr><td>End time:</td><td><input type="text" name="endTimePresale1" readonly value="" class="time"></td><td></td></tr>
-        <tr><td>Current Rate:</td><td><input type="text" name="presale1tokensPerETH" readonly value="" class="number"></td><td>tokens = 1 ETH</td></tr>
-        <tr><td>Total collected:</td><td><input type="text" name="preSale1EthCollected" readonly value="" class="number"></td><td>ETH</td></tr>
-        <tr><td>Hard Cap:</td><td>$<input type="text" name="preSale1DollarHardCap" readonly value="" class="number"></td><td></td></tr>
-    </table>
-    <div><label>Token at: <input type="text" name="tokenAddress" readonly value="" class="ethAddress"></label></div>
-    <div><input type="button" id="crowdsaleClaim" value="Claim Ether"> Transfer collected Ether from the contract to your wallet</div>
-    <div><input type="button" id="crowdsaleFinalize" value="Finalize"> Finalize crowdsale: finish token minting, allow token transfer, change token ownership to yourself</div>
 
-</form>
-
-<br>
-<hr>
-<h2>Presale Round 2</h2>
-<h3>4. Start Round</h3>
-<form id="publishContractsForm">
-    <table>
-        <tr><td>Start time:</td><td><input type="text" name="startTimePresale2" value="" class="time"></td><td></td></tr>
-        <tr><td>End time:</td><td><input type="text" name="endTimePresale2" value="" class="time"></td><td></td></tr>
-    </table>
-    <div><input type="button" id="switchState2" value="Start"></div>
-    <br>
-    <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
-    <div><label>Crowdsale Published at: <input type="text" readonly name="publishedAddress" value="" class="ethAddress"></label></div>
-    <div><label>Token Published at: <input type="text" readonly name="tokenAddress" value="" class="ethAddress"></label></div>
-</form>
-
-<h3>5. Manage Presale Round 2 </h3>
-<form id="manageCrowdsale2">
-    <div><label>Crowdsale at: <input type="text" name="crowdsaleAddress" value="" class="ethAddress"></label></div>
-    <div><input type="button" id="loadCrowdsaleInfo" value="Load info"></div>
-    <table>
-        <tr><td>Start time:</td><td><input type="text" name="startTimePresale2" readonly value="" class="time"></td><td></td></tr>
-        <tr><td>End time:</td><td><input type="text" name="endTimePresale2" readonly value="" class="time"></td><td></td></tr>
-        <tr><td>Current Rate:</td><td><input type="text" name="presale2tokensPerETH" readonly value="" class="number"></td><td>tokens = 1 ETH</td></tr>
-        <tr><td>Total collected:</td><td><input type="text" name="preSale2EthCollected" readonly value="" class="number"></td><td>ETH</td></tr>
-        <tr><td>Hard Cap:</td><td>$<input type="text" name="preSale2DollarHardCap" readonly value="" class="number"></td><td></td></tr>
-    </table>
-    <div><label>Token at: <input type="text" name="tokenAddress" readonly value="" class="ethAddress"></label></div>
-    <div><input type="button" id="crowdsaleClaim" value="Claim Ether"> Transfer collected Ether from the contract to your wallet</div>
-    <div><input type="button" id="crowdsaleFinalize" value="Finalize"> Finalize crowdsale: finish token minting, allow token transfer, change token ownership to yourself</div>
-</form>
-
-<br>
-<hr>
-<h2>ICO</h2>
-<h3>6. Start Round</h3>
-<form id="publishContractsForm">
-    <table>
-        <tr><td>Start time:</td><td><input type="text" name="ICOstartTime" value="" class="time"></td><td></td></tr>
-        <tr><td>End time:</td><td><input type="text" name="ICOendTime" value="" class="time"></td><td></td></tr>
-    </table>
-    <div><input type="button" id="switchState3" value="Start"></div>
-    <br>
-    <div><label>Transaction: <input type="text" readonly name="publishedTx" value="" class="ethTx"></label></div>
-    <div><label>Crowdsale Published at: <input type="text" readonly name="publishedAddress" value="" class="ethAddress"></label></div>
-    <div><label>Token Published at: <input type="text" readonly name="tokenAddress" value="" class="ethAddress"></label></div>
-</form>
-
-<h3>7. Manage ICO </h3>
-<form id="manageCrowdsale3">
-    <div><label>Crowdsale at: <input type="text" name="crowdsaleAddress" value="" class="ethAddress"></label></div>
-    <div><input type="button" id="loadCrowdsaleInfo" value="Load info"></div>
-    <table>
-        <tr><td>Start time:</td><td><input type="text" name="ICOstartTime" readonly value="" class="time"></td><td></td></tr>
-        <tr><td>End time:</td><td><input type="text" name="ICOendTime" readonly value="" class="time"></td><td></td></tr>
-        <tr><td>Current Rate:</td><td><input type="text" name="saleTokensPerEth" readonly value="" class="number"></td><td>tokens = 1 ETH</td></tr>
-        <tr><td>Total collected:</td><td><input type="text" name="ICO_EthCollected" readonly value="" class="number"></td><td>ETH</td></tr>
-        <tr><td>Hard Cap:</td><td>$<input type="text" name="ICO_DollarHardCap" readonly value="" class="number"></td><td></td></tr>
-    </table>
-    <div><label>Token at: <input type="text" name="tokenAddress" readonly value="" class="ethAddress"></label></div>
-    <div><input type="button" id="crowdsaleClaim" value="Claim Ether"> Transfer collected Ether from the contract to your wallet</div>
-    <div><input type="button" id="crowdsaleFinalize" value="Finalize"> Finalize crowdsale: finish token minting, allow token transfer, change token ownership to yourself</div>
-</form>
-
-<br>
-<hr>
-<h2>Current Balance</h2>
-  <table>
-      <tr><td><h3>Current balance:</h3></td><td><input type="text" name="balance" readonly value="" class="number"></td><td>ETH</td></tr>
-  </table>
- -->
 </body>
 </html>
 

@@ -6,24 +6,28 @@ import './TokenTimelockMod.sol';
 
 contract CoderCrowdsale is Ownable, HasNoTokens{
     using SafeMath for uint256;
+    
+    uint8 private constant PERCENT_DIVIDER = 100;              
+
+    uint256 public constant minContribution = 100 finney;   //we do not accept contributions lower than this value
 
     CoderCoin public token;                         //token for crowdsale
 
-    uint256   public preSale_startTimestamp;        //when Presale 1 started uint256 public
-    uint256   public preSaleBasePriceInWei;         //price in wei
-    uint256   public preSaleEthHardCap;             //hard cap for Round 1 presale in ETH
-    uint256   public preSaleWeiCollected;           //how much wei already collected at pre-sale 1
-    uint256   public preSale_endTimestamp;          //when Presale 1 ends uint256 public
+    uint256   public preSale_startTimestamp;        //when Presale started
+    uint256   public preSale_baseRate;              //how many CDR one will get for 1 ETH during Presale without bonus
+    uint256   public preSale_hardCap;               //hard cap for Presale in wei
+    uint256   public preSale_collected;             //how much wei already collected at pre-sale
 
     uint256   public ICO_startTimestamp;            //when ICO sale started uint256 public
-    uint256   public ICO_basePriceInWei;            //price in wei
-    uint256   public ICO_EthHardCap;                //hard cap for the main sale round in ETH
-    uint256   public ICO_WeiCollected;              //how much wei already collected at main sale
-    uint256   public ICO_endTimestamp;              //when Presale 2 ends uint256 public
-    uint256   public bonusDecreaseInterval;         //seconds before bonus decreases uint32
-    //uint256   public daysPassed;                    //days passed since ICO start datetime (86,400 sec/day)
+    uint256   public ICO_baseRate;                  //how many CDR one will get for 1 ETH during main sale without bonus
+    uint256   public ICO_hardCap;                   //hard cap for the main sale round in wei
+    uint256   public ICO_collected;                 //how much wei already collected at main sale
 
-    uint8     public ownersPercent;                 //percent of tokens that will be minted to owner
+    uint8     public ICO_bonusStartPercent;         //Start bonus (in percents  of contribution)
+    uint32    public ICO_bonusDecreaseInterval;     //Interval when bonus decreases during ICO
+    uint8     public ICO_bonusDecreasePercent;      //Bonus decrease (in percents of contribution)
+
+    uint8     public foundersPercent;                 //percent of tokens that will be minted to founders (including timelocks)
 
     enum State { Paused, PreSale, ICO, Finished }
     State public state;                             //current state of the contracts
@@ -45,17 +49,30 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
 
 
     function CoderCrowdsale (
-        uint256 _preSaleBasePriceInWei, uint256 _preSaleEthHardCap,
-        uint256 _ICO_basePriceInWei, uint256 _ICO_EthHardCap, uint256 _bonusDecreaseInterval,
-        uint8 _ownersPercent
+        uint256 _preSale_baseRate, uint256 _preSale_hardCap, uint256 _ICO_baseRate, uint256 _ICO_hardCap,
+        uint8 _ICO_bonusStartPercent, uint32 _ICO_bonusDecreaseInterval, uint8 _ICO_bonusDecreasePercent,
+        uint8 _foundersPercent
         ) public {
+
+        require(_preSale_baseRate > 0);
+        require(_preSale_hardCap > 0);
+        require(_ICO_baseRate > 0);
+        require(_ICO_hardCap > 0);
+        require(_ICO_bonusDecreaseInterval > 0);
+        require(_ICO_bonusStartPercent > 0 && _ICO_bonusStartPercent <= PERCENT_DIVIDER);
+        require(_ICO_bonusDecreasePercent > 0 && _ICO_bonusDecreasePercent < _ICO_bonusStartPercent);
+        
         state = State.Paused;
-        preSaleBasePriceInWei = _preSaleBasePriceInWei;
-        preSaleEthHardCap = _preSaleEthHardCap;
-        ICO_basePriceInWei = _ICO_basePriceInWei;
-        ICO_EthHardCap = _ICO_EthHardCap;
-        bonusDecreaseInterval = _bonusDecreaseInterval;
-        ownersPercent = _ownersPercent;
+        preSale_baseRate = _preSale_baseRate;
+        preSale_hardCap = _preSale_hardCap;
+        ICO_baseRate = _ICO_baseRate;
+        ICO_hardCap = _ICO_hardCap;
+        ICO_bonusDecreaseInterval = _ICO_bonusDecreaseInterval;
+        ICO_bonusStartPercent = _ICO_bonusStartPercent;
+        ICO_bonusDecreasePercent = _ICO_bonusDecreasePercent;
+
+        foundersPercent = _foundersPercent;
+
         token = new CoderCoin();                    //creating token in constructor
     }
 
@@ -63,24 +80,28 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     * @notice To buy tokens just send ether here
     */
     function() payable public {
-        require(msg.value > 0);
+        require(msg.value >= minContribution);
         require(crowdsaleOpen());
-        uint256 rate = currentRate(msg.value);
+        uint256 rate = currentRate();
         assert(rate > 0);
         uint256 buyerTokens = rate.mul(msg.value);
-        //uint256 ownerTokens = buyerTokens.mul(ownersPercent).div(100);  //convert ownersPercent to percent by dividing it by 100
-        token.mint(msg.sender, buyerTokens);
-        //token.mint(owner, ownerTokens);
-        TokenPurchase(msg.sender, msg.value, buyerTokens);              //event for TokenPurchase
+
         if (state == State.PreSale) {
-            preSaleWeiCollected = preSaleWeiCollected.add(msg.value);
+            preSale_collected = preSale_collected.add(msg.value);
+            require(preSale_collected <= preSale_hardCap);
         }else if (state == State.ICO) {
-            ICO_WeiCollected = ICO_WeiCollected.add(msg.value);
+            ICO_collected = ICO_collected.add(msg.value);
+            require(ICO_collected <= ICO_hardCap);
         }
+
         if ( hardCapReached(state) ){
             state = State.Paused;
         }
+
+        token.mint(msg.sender, buyerTokens);
+        TokenPurchase(msg.sender, msg.value, buyerTokens);              //event for TokenPurchase
     }
+
     /**
     * @notice Check if crowdsale is open or not
     */
@@ -91,27 +112,23 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     }
     /**
     * @notice How many tokens you receive for 1 ETH
-    * @param etherAmount how much ether you are sending
     * @return conversion rate
     */
-    function currentRate(uint256 etherAmount) public constant returns(uint256){
-        if(state == State.Paused || state == State.Finished) return 0;
-        uint256 rate;
-        if(state == State.PreSale) {
-            rate = calculatePreSaleRate(etherAmount, preSaleBasePriceInWei);
+    function currentRate() public constant returns(uint256){
+        if(state == State.Paused || state == State.Finished) {
+            return 0;
+        } else if(state == State.PreSale) {
+            return calculatePreSaleRate();
         } else if(state == State.ICO){
-            rate = calculateICOrate(etherAmount, ICO_basePriceInWei);
+            return calculateICOrate();
         } else {
             revert();   //state is wrong
         }
-        return rate;
     }
 
-    function calculatePreSaleRate(uint256 etherAmount, uint256 basePriceWei) constant public returns(uint256) {
-        require(etherAmount >= 100 finney);                     //minimum contribution 0.1 ETH
-        uint256 rate = etherAmount.div(basePriceWei);           //convert etherAmount to wei and divide by price per token (in wei)
+    function calculatePreSaleRate() constant public returns(uint256) {
         uint8 bonusPercentage;                                  //baseTokens awarded as bonus
-        uint256 totalWeiCollected = totalEthRaised();
+        uint256 totalWeiCollected = totalCollected();
         if(totalWeiCollected < 500 ether) {                          
             bonusPercentage = 75;                               //75% bonus tokens awarded for first 500 ETH
         }
@@ -130,33 +147,33 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         else {
             bonusPercentage = 30;                               //30% bonus tokens awarded for last 1000 ETH (total 5000 ETH)                   
         }
-        uint256 bonus = rate.mul(bonusPercentage).div(100);     //divide by 100 to convert bonusPercentage to percent
+        uint256 rate = preSale_baseRate;
+        uint256 bonus = rate.mul(bonusPercentage).div(PERCENT_DIVIDER); //divide by 100 to convert bonusPercentage to percent
         rate = rate.add(bonus);                                 //add bonus tokens to base rate
         return rate;
     }
 
-    function calculateICOrate(uint256 etherAmount, uint256 basePriceWei) constant public returns(uint256){
+    function calculateICOrate() constant public returns(uint256){
         if(ICO_startTimestamp == 0 || now < ICO_startTimestamp) return 0;
-        require(etherAmount >= 100 finney);                             //minimum contribution 0.1 ETH
-        uint256 rate = etherAmount.div(basePriceWei);                   //convert etherAmount to wei and divide by price per token (in wei)
+        uint256 rate = ICO_baseRate;
         uint256 saleRunningSeconds = now - ICO_startTimestamp;
-        uint256 daysPassed = saleRunningSeconds.div(bonusDecreaseInterval);     //remainder will be discarded (bonusDecreaaseInterval = 86400 seconds)
-        uint256 startBonusPercentage = 2500;                            //bonus percent of tokens handed on Day 1 (* 100)
-        uint256 decreaseAmount = 100;                                   //1% decrease in bonusTokens per day
-        uint256 bonusPercentage = startBonusPercentage.sub(decreaseAmount.mul(daysPassed));
-        if (bonusPercentage < 0) {
-            bonusPercentage = 0;
-        }
-        uint256 bonus = rate.mul(bonusPercentage).div(10000);           //divide by 10,000 to convert bonusPercentage to percent
-        rate = rate.add(bonus);                                         //add bonus tokens to base ratee
+        uint256 daysPassed = saleRunningSeconds.div(ICO_bonusDecreaseInterval); //remainder will be discarded
+
+        uint256 decreaseBonusPercent = ICO_bonusDecreasePercent * daysPassed;
+        assert(decreaseBonusPercent / daysPassed == ICO_bonusDecreasePercent); //SafeMath doesn't work with uint8 so check this manualy
+        uint256 bonusPercentage = (ICO_bonusStartPercent > decreaseBonusPercent) ? (ICO_bonusStartPercent - decreaseBonusPercent) : 0;
+        assert(bonusPercentage <= PERCENT_DIVIDER);
+
+        uint256 bonusRate = rate.mul(bonusPercentage).div(PERCENT_DIVIDER);
+        rate = rate.add(bonusRate);                                         //add bonus tokens to base rate
         return rate;
     }
 
     function hardCapReached(State _state) constant public returns(bool){
         if(_state == State.PreSale) {
-            return preSaleWeiCollected >= preSaleEthHardCap.mul(1000000000000000000);
+            return preSale_collected >= preSale_hardCap;
         }else if(_state == State.ICO){
-            return ICO_WeiCollected >= ICO_EthHardCap.mul(1000000000000000000);
+            return ICO_collected >= ICO_hardCap;
         }else {
             return false;
         }
@@ -180,9 +197,10 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         state = newState;
     }
 
-    function totalEthRaised() constant public returns(uint256){
-        return preSaleWeiCollected.add(ICO_WeiCollected);   //total wei raised in each round
+    function totalCollected() constant public returns(uint256){
+        return preSale_collected.add(ICO_collected);   //total wei raised in each round
     }
+
     /**
     * @notice Owner can claim collected ether
     */
@@ -199,15 +217,15 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         uint8 beneficiaryPercent = 0;
         for(uint8 i=0; i < reservePercents.length; i++){
             require(reservePercents[i] > 0);
-            require(reservePercents[i] <= 100);
+            require(reservePercents[i] <= PERCENT_DIVIDER);
             beneficiaryPercent += reservePercents[i];
-            require(beneficiaryPercent <= 100);
+            require(beneficiaryPercent <= PERCENT_DIVIDER);
         }
-        uint8 ownerPercent2 = 100 - beneficiaryPercent;
+        uint8 ownerPercent = PERCENT_DIVIDER - beneficiaryPercent;
 
-        uint256 totalTokens = token.totalSupply().mul(ownersPercent).div(100);
+        uint256 totalTokens = token.totalSupply().mul(foundersPercent).div(PERCENT_DIVIDER);
         for(i=0; i < reserveBeneficiaries.length; i++){
-            uint256 amount = totalTokens.mul(reservePercents[i]).div(100);
+            uint256 amount = totalTokens.mul(reservePercents[i]).div(PERCENT_DIVIDER);
             require(reserveReleases[i] > now);
             require(reserveBeneficiaries[i] != address(0));
             //TokenTimelock tt = new TokenTimelock(token, reserveBeneficiaries[i], reserveReleases[i]);
@@ -217,7 +235,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
             TokenTimelockCreated(tt, reserveReleases[i], reserveBeneficiaries[i], amount);
         }
 
-        amount = totalTokens.mul(ownerPercent2).div(100);
+        amount = totalTokens.mul(ownerPercent).div(PERCENT_DIVIDER);
         token.mint(owner, amount);
 
         token.finishMinting();
