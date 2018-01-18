@@ -131,7 +131,7 @@ jQuery(document).ready(function($) {
         let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
 
         crowdsaleInstance.preSale_startTimestamp(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             if(result > 0){
                 $('input[name="preSale_startTimestamp"]', form).val(timestampToString(result));    
             }else{
@@ -139,20 +139,20 @@ jQuery(document).ready(function($) {
             }
         });
         crowdsaleInstance.preSale_baseRate(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="preSale_baseRate"]', form).val(result);
         });
         crowdsaleInstance.preSale_hardCap(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="preSale_hardCap"]', form).val(web3.fromWei(result, 'ether'));
         });
         crowdsaleInstance.preSale_collected(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="preSale_collected"]', form).val(web3.fromWei(result, 'ether'));
         });
 
         crowdsaleInstance.ICO_startTimestamp(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             if(result > 0){
                 $('input[name="ICO_startTimestamp"]', form).val(timestampToString(result));
             }else{
@@ -160,54 +160,54 @@ jQuery(document).ready(function($) {
             }
         });
         crowdsaleInstance.ICO_baseRate(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="ICO_baseRate"]', form).val(result);
         });
         crowdsaleInstance.ICO_hardCap(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="ICO_hardCap"]', form).val(web3.fromWei(result, 'ether'));
         });
         crowdsaleInstance.ICO_collected(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="ICO_collected"]', form).val(web3.fromWei(result, 'ether'));
         });
 
         crowdsaleInstance.ICO_bonusStartPercent(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="ICO_bonusStartPercent"]', form).val(result);
         });
         crowdsaleInstance.ICO_bonusDecreaseInterval(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="ICO_bonusDecreaseInterval"]', form).val(result);
         });
         crowdsaleInstance.ICO_bonusDecreasePercent(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="ICO_bonusDecreasePercent"]', form).val(result);
         });
 
         crowdsaleInstance.foundersPercent(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="foundersPercent"]', form).val(result);
         });
 
         crowdsaleInstance.currentRate(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="currentRate"]', form).val(result);
             setCDRPriceSpanText($('#manage_currentRate_price'), result);
         });
         crowdsaleInstance.totalCollected(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
-            $('input[name="totalCollected"]', form).val(result);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
+            $('input[name="totalCollected"]', form).val(web3.fromWei(result), 'ether');
         });
 
         web3.eth.getBalance(crowdsaleAddress, function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name=balance]', form).val(web3.fromWei(result, 'ether'));
         });
 
 
         crowdsaleInstance.state(function(error, result){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             let state = Number(result);
             $('input[name="contractState"]', form).val(stateNumToName(state));
             if(state < 2){
@@ -238,7 +238,7 @@ jQuery(document).ready(function($) {
 
         let newState = $('select[name="newState"]', form).val();
         crowdsaleInstance.setState(newState, function(error, tx){
-            if(!!error) console.log('Contract info loading error:\n', error);
+            if(!!error) {console.log('Contract info loading error:\n', error); return;}
             console.log('State change transaction published. Tx: '+tx);
             waitTxReceipt(tx, function(receipt){
                 console.log('State change tx mined', receipt);
@@ -256,12 +256,8 @@ jQuery(document).ready(function($) {
         if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
         let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
 
-        crowdsaleInstance.claimEther(function(error, tx){
-            if(!!error){
-                console.log('Can\'t execute claim:\n', error);
-                printError(error.message.substr(0,error.message.indexOf("\n")));
-                return;
-            }
+        crowdsaleInstance.claimCollectedEther(function(error, tx){
+            if(!!error) {console.log('Can\'t execute claim:\n', error); return;}
             console.log('Claim tx:', tx);
             waitTxReceipt(tx, function(receipt){
                 console.log('Claim tx mined', receipt);

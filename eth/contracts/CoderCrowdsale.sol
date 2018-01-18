@@ -94,10 +94,6 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
             require(ICO_collected <= ICO_hardCap);
         }
 
-        if ( hardCapReached(state) ){
-            state = State.Paused;
-        }
-
         token.mint(msg.sender, buyerTokens);
         TokenPurchase(msg.sender, msg.value, buyerTokens);              //event for TokenPurchase
     }
