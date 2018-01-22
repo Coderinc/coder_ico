@@ -20,7 +20,10 @@ jQuery(document).ready(function($) {
 
     function init(){
         web3 = loadWeb3();
-        if(web3 == null) return;
+        if(web3 == null) {
+            setTimeout(init, 5000);
+            return;
+        }
         //console.log("web3: ",web3);
         loadContract('./eth/build/contracts/CoderCoin.json', function(data){
             tokenContract = data;
@@ -29,9 +32,9 @@ jQuery(document).ready(function($) {
         loadContract('./eth/build/contracts/CoderCrowdsale.json', function(data){
             crowdsaleContract = data;
             $('#crowdsaleABI').text(JSON.stringify(data.abi));
+            initManageForm();
         });
         initCrowdsaleForm();
-        initManageForm();
     }
     function initCrowdsaleForm(){
         let form = $('#publishContractsForm');
@@ -64,9 +67,12 @@ jQuery(document).ready(function($) {
         let crowdsale = getUrlParam('crowdsale');
         if(crowdsale){
             $('input[name=crowdsaleAddress]', '#manageCrowdsale').val(crowdsale);
-            $('input[name=crowdsaleAddress]', '#lockup_form').val(crowdsale);
+            $('input[name=crowdsaleAddress]', '#finishCrowdsale').val(crowdsale);
             setTimeout(function(){$('#loadCrowdsaleInfo').click();}, 100);
         }
+        
+        initDateTimeField($('input[name="preSale_startTimestamp"]', '#manageCrowdsale'));
+        initDateTimeField($('input[name="ICO_startTimestamp"]', '#manageCrowdsale'));
     }
 
     $('#publishContracts').click(function(){
@@ -133,7 +139,7 @@ jQuery(document).ready(function($) {
         crowdsaleInstance.preSale_startTimestamp(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             if(result > 0){
-                $('input[name="preSale_startTimestamp"]', form).val(timestampToString(result));    
+                setDateTimeFieldValue($('input[name="preSale_startTimestamp"]', form), result);    
             }else{
                 $('input[name="preSale_startTimestamp"]', form).val('not defined');
             }
@@ -154,7 +160,7 @@ jQuery(document).ready(function($) {
         crowdsaleInstance.ICO_startTimestamp(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             if(result > 0){
-                $('input[name="ICO_startTimestamp"]', form).val(timestampToString(result));
+                setDateTimeFieldValue($('input[name="ICO_startTimestamp"]', form), result);    
             }else{
                 $('input[name="ICO_startTimestamp"]', form).val('not defined');
             }
@@ -273,38 +279,49 @@ jQuery(document).ready(function($) {
         `<tr>
             <td>${releaseCount}</td>
             <td><input type='text' name='address[${releaseCount}]' class="ethAddress"/></td>
-            <td><input type='number' name='lockupTime[${releaseCount}]' /></td>
-            <td><input type='number' name='percent[${releaseCount}] ' /></td>
+            <td><input type='text' name='lockupTime[${releaseCount}]' id="lockupReleaseTime[${releaseCount}]"/></td>
+            <td><input type='text' name='percent[${releaseCount}]' /></td>
         </tr>`;
         $('#lockup_table tbody').append(markup);
+        let $dateField = $('#lockupReleaseTime\\['+releaseCount+'\\]')
+        initDateTimeField($dateField);
+        let d = new Date(Date.now()+365*24*60*60*1000); //add 1 year
+        d.setHours(0, 0, 0, 0);                         //set time to midnight
+        setDateTimeFieldValue($dateField, d.getTime()/1000);
     });
-
-    $('#finishCrowdsale').click(function(){
+    $('#finishCrowdsaleBtn').click(function(){
         if(crowdsaleContract == null) return;
 
-        let form = $('#lockup_form');
+        let form = $('#finishCrowdsale');
         let crowdsaleAddress = $('input[name=crowdsaleAddress]', form).val();
         if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
         let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
 
-        var everything = $('#lockup_form').serializeArray();
+        let rows = $('#lockup_table tbody tr').length;
+        let reserveBeneficiaries = [];
+        let reserveLockupTimes = [];
+        let reservePercents = [];
+        for(let i=0; i < rows; i++){
+            let address = $('input[name=address\\['+(i+1)+'\\]]', form).val()
+            if(!web3.isAddress(address)){
+                printError('Bad address on row '+(i+1)+': " '+$('input[name=address\\['+(i+1)+'\\]]', form).val()+'"');
+                return;
+            }
+            let timestamp = getDateTimeFieldValue($('input[name=lockupTime\\['+(i+1)+'\\]]', form));
+            if(timestamp < Date.now()/1000){
+                printError('Bad release date on row '+(i+1)+': "'+$('input[name=lockupTime\\['+(i+1)+'\\]]', form).val()+'"');
+                return;
+            }
+            let percent = Number($('input[name=percent\\['+(i+1)+'\\]]', form).val());
+            if(isNaN(percent) ||  percent <= 0 || percent > 100) {
+                printError('Bad percent on row '+(i+1)+': "'+$('input[name=percent\\['+(i+1)+'\\]]', form).val()+'"');
+                return;
+            }
 
-        var benef = [];
-        var lockupTimes = [];
-        var percents = [];
-
-        let now = Date.now();
-
-        everything.forEach(o => {
-            if (/address/.test(o.name)) benef.push(o.value);
-            if (/lockupTime/.test(o.name)) lockupTimes.push(now+Number(o.value)*1000);
-            if (/percent/.test(o.name)) percents.push(o.value);
-
-        });
-
-        reserveBeneficiaries = benef;
-        reserveLockupTimes = lockupTimes;
-        reservePercents = percents
+            reserveBeneficiaries[i] = address;
+            reserveLockupTimes[i] = timestamp;
+            reservePercents[i] = percent;
+        }
 
         console.log('Lockup arguments',reserveBeneficiaries, reserveLockupTimes, reservePercents);
 
@@ -322,7 +339,6 @@ jQuery(document).ready(function($) {
         });
 
     });
-
     //====================================================
 
     function loadWeb3(){
@@ -426,5 +442,17 @@ jQuery(document).ready(function($) {
     }
     function tokenRateToUSDPrice(rate, ethPrice){
         return Math.round(10000 * ethPrice / rate)/10000;
+    }
+
+    function initDateTimeField($field){
+        //here we can init date/time plugin
+    }
+    function getDateTimeFieldValue($field){
+        let ts = Date.parse($field.val()); 
+        return Math.round(ts/1000);
+    }
+    function setDateTimeFieldValue($field, timestamp){
+        let d = new Date(timestamp * 1000);
+        $field.val(d.toLocaleString('en-US'));
     }
 });

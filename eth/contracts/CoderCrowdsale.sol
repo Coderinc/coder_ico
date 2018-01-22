@@ -32,6 +32,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     enum State { Paused, PreSale, ICO, Finished }
     State public state;                             //current state of the contracts
 
+    mapping(address => bool) whitelist;
 
 
     /**
@@ -238,6 +239,17 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         token.transferOwnership(owner);
         state = State.Finished;
     }
+
+
+    function whitelistAddress(address who, bool allow) public {
+        whitelist[who] = allow;
+    }
+    function whitelistAddresses(address[] who) public {
+        for(uint32 i=0; i < who.length; i++){
+            whitelist[who[i]] = true;
+        }
+    }
+
 
 }
 
