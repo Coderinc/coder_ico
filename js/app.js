@@ -270,7 +270,7 @@ jQuery(document).ready(function($) {
             function loadBonus(num){
                 crowdsaleInstance.preSaleBonuses(num, function(error, result){
                     if(!!error) {console.log('Contract info loading error:\n', error);  return;}
-                    console.log('loadPreSaleBonuses_loadBonus',num, result);
+                    //console.log('loadPreSaleBonuses_loadBonus',num, result);
                     let threshold = web3.fromWei(result[0], 'ether');
                     let percent = web3.toDecimal(result[1]);
                     if(threshold != 0 && num < 10){
@@ -325,7 +325,47 @@ jQuery(document).ready(function($) {
             });
         });
     });
-    
+    $('#whitelistSubmit').click(function(){
+        if(crowdsaleContract == null) return;
+        printError('');
+        let form = $('#manageCrowdsale');
+
+        let crowdsaleAddress = $('input[name="crowdsaleAddress"]', form).val();
+        if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
+        let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
+
+        let who = $('input[name="whitelistAddress"]', form).val();
+        if(!web3.isAddress(who)){printError('Whitelist address is not an Ethereum address'); return;}
+
+        let allow = $('input[name="whitelistAllow"]').prop('checked');
+
+        crowdsaleInstance.whitelistAddress(who, allow, function(error, tx){
+            if(!!error) {console.log('Contract info loading error:\n', error); return;}
+            console.log('WhitelistAddress transaction published. Tx: '+tx);
+            waitTxReceipt(tx, function(receipt){
+                console.log('WhitelistAddress tx mined', receipt);
+                $('input[name="whitelistAddressCheck"]', form).val(who);
+                $('#whitelistCheck').click();
+            });
+        })
+    });
+
+    $('#whitelistCheck').click(function(){
+        if(crowdsaleContract == null) return;
+        printError('');
+        let form = $('#manageCrowdsale');
+
+        let crowdsaleAddress = $('input[name="crowdsaleAddress"]', form).val();
+        if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
+        let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
+
+        let who = $('input[name="whitelistAddressCheck"]', form).val();
+        crowdsaleInstance.whitelist(who, function(error, result){
+            if(!!error) {console.log('Contract info loading error:\n', error); return;}
+            $('#whitelistAddressCheckResult').html(result?'Allowed':'Not allowed');
+        })
+    });
+
     $('#crowdsaleClaim').click(function(){
         if(crowdsaleContract == null) return;
         printError('');

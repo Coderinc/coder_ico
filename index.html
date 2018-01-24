@@ -107,6 +107,17 @@
         <tr><td>Current ballance:</td><td><input readonly type="text" name="balance" value="" class="number"></td><td>ETH</td></tr>
     </table>
     <div><input type="button" id="crowdsaleClaim" value="Claim Ether"> Transfer collected Ether from the contract to your wallet</div>
+    <h4>Whitelist</h4>
+    <div>
+        <label>Address: <input type="text" name="whitelistAddress" class="ethAddress"></label>
+        <label><input type="checkbox" name="whitelistAllow" checked> allow</label>
+        <input type="button" id="whitelistSubmit" value="Submit" />
+    </div>
+    <div>
+        <label>Address: <input type="text" name="whitelistAddressCheck" class="ethAddress"></label>
+        <input type="button" id="whitelistCheck" value="Check" />
+        <span id="whitelistAddressCheckResult"></span>
+    </div>
 </form>
 
 <h3>3. Finish ICO</h3>

@@ -38,8 +38,8 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     enum State { Paused, PreSale, ICO, Finished }
     State public state;                             //current state of the contracts
     CoderCoin public token;                         //token for crowdsale
-    mapping(address => bool) whitelist;             //who is allowed to do purshases
-    mapping(uint256 => uint256) intervalCollected;  //mapping of intervals to weis collected during this interval
+    mapping(address => bool) public whitelist;             //who is allowed to do purshases
+    mapping(uint256 => uint256) public intervalCollected;  //mapping of intervals to weis collected during this interval
 
 
     /**
