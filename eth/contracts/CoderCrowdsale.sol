@@ -169,8 +169,10 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         uint32 bonus = 0;
         for(uint8 i=0; i < preSaleBonuses.length; i++){
             PreSaleBonus storage psb = preSaleBonuses[i];
-            if(totalWeiCollected < psb.threshold) break;
-            bonus = psb.bonusPercent;
+            if(totalWeiCollected < psb.threshold){
+                bonus = psb.bonusPercent;    
+                break;
+            } 
         }
         uint256 rate = preSale_baseRate;
         uint256 bonusRate = rate.mul(bonus).div(PERCENT_DIVIDER); //divide by 100 to convert bonusPercentage to percent
