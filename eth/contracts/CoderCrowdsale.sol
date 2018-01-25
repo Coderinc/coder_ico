@@ -1,10 +1,11 @@
 pragma solidity ^0.4.18;
 
+import './zeppelin/lifecycle/Destructible.sol';
 import './zeppelin/ownership/Ownable.sol';
 import './CoderCoin.sol';
 import './TokenTimelockMod.sol';
 
-contract CoderCrowdsale is Ownable, HasNoTokens{
+contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     using SafeMath for uint256;
     
     uint8 private constant PERCENT_DIVIDER = 100;              
@@ -26,20 +27,22 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     uint256   public ICO_intervalContributionLimit; //How much wei we can accept during one interval  
 
     uint256   public minContribution;                //Do not accept contributions lower than this value
-    uint8     public foundersPercent;                //percent of tokens that will be minted to founders (including timelocks)
+    uint8     public foundersPercent;                //Percent of tokens that will be minted to founders (including timelocks)
+    uint256   public goal;                           //Minimal amount of collected Ether (if not reached - ETH may be refunded)
 
 
     struct PreSaleBonus {
-        uint256 threshold;                       //Maximum amount collected, to receiv this bonus (if collected more - look for next bonus)
-        uint32 bonusPercent;                        //a bonus percent, so that bonus = amount.mul(bonusPercent).div(PERCENT_DIVIDER)
+        uint256 threshold;                          //Maximum amount collected, to receiv this bonus (if collected more - look for next bonus)
+        uint32 bonusPercent;                        //F bonus percent, so that bonus = amount.mul(bonusPercent).div(PERCENT_DIVIDER)
     }
     PreSaleBonus[] public preSaleBonuses;           //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap
 
     enum State { Paused, PreSale, ICO, Finished }
-    State public state;                             //current state of the contracts
-    CoderCoin public token;                         //token for crowdsale
-    mapping(address => bool) public whitelist;             //who is allowed to do purshases
-    mapping(uint256 => uint256) public intervalCollected;  //mapping of intervals to weis collected during this interval
+    State public state;                                     //current state of the contracts
+    CoderCoin public token;                                 //token for crowdsale
+    mapping(address => bool) public whitelist;              //who is allowed to do purshases
+    mapping(uint256 => uint256) public intervalCollected;   //mapping of intervals to weis collected during this interval
+    mapping(address => uint256) contributions;              //amount of ether (in wei)received from a buyer
 
 
     /**
@@ -60,7 +63,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         uint256[] preSaleBonusThresholds, uint32[] preSaleBonusPercents, 
         uint256 _preSale_baseRate, uint256 _preSale_hardCap, uint256 _ICO_baseRate, uint256 _ICO_hardCap,
         uint8 _ICO_bonusStartPercent, uint32 _ICO_bonusDecreaseInterval, uint8 _ICO_bonusDecreasePercent, uint256 _ICO_intervalContributionLimit,
-        uint8 _foundersPercent, uint256 _minContribution
+        uint8 _foundersPercent, uint256 _minContribution, uint256 _goal
         ) public {
 
         require(_preSale_baseRate > 0);
@@ -87,6 +90,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
 
         foundersPercent = _foundersPercent;
         minContribution = _minContribution;
+        goal = _goal;
 
         token = new CoderCoin();                    //creating token in constructor
     }
@@ -130,6 +134,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
             require(intervalCollected[currentInterval] <= ICO_intervalContributionLimit);
         }
 
+        contributions[msg.sender] = contributions[msg.sender].add(msg.value);
         token.mint(msg.sender, buyerTokens);
         TokenPurchase(msg.sender, msg.value, buyerTokens);              //event for TokenPurchase
     }
@@ -249,6 +254,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
     * @notice Owner can claim collected ether
     */
     function claimCollectedEther() onlyOwner public {
+        require(totalCollected() >= goal);
         if(this.balance > 0){
             owner.transfer(this.balance);    
         }
@@ -285,6 +291,29 @@ contract CoderCrowdsale is Ownable, HasNoTokens{
         token.finishMinting();
         token.transferOwnership(owner);
         state = State.Finished;
+    }
+
+
+    /**
+    * @notice Sends all contributed ether back if minimum cap is not reached by the end of crowdsale
+    */
+    function refund() public returns(bool){
+        return refundTo(msg.sender);
+    }
+    function refundTo(address beneficiary) public returns(bool) {
+        require(state == State.Finished);
+        require(contributions[beneficiary] > 0);
+        require(totalCollected() < goal);
+
+        uint256 value = contributions[beneficiary];
+        contributions[beneficiary] = 0;
+        beneficiary.transfer(value);
+        return true;
+    }
+    function refundAvailable(address beneficiary) constant public returns(uint256){
+        if(state != State.Finished) return 0;
+        if(totalCollected() >= goal) return 0;
+        return contributions[beneficiary];
     }
 
 }

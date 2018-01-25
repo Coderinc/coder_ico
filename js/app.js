@@ -97,6 +97,8 @@ jQuery(document).ready(function($) {
         
         initDateTimeField($('input[name="preSale_startTimestamp"]', '#manageCrowdsale'));
         initDateTimeField($('input[name="ICO_startTimestamp"]', '#manageCrowdsale'));
+
+        $('input[name=claimRefundAddress]', '#manageCrowdsale').val(web3.eth.accounts[0]);
     }
 
     $('#publishContracts').click(function(){
@@ -118,6 +120,7 @@ jQuery(document).ready(function($) {
 
         let foundersPercent  = $('input[name="foundersPercent"]', form).val();
         let minContribution  = web3.toWei($('input[name="minContribution"]', form).val(), 'ether');
+        let goal  = web3.toWei($('input[name="goal"]', form).val(), 'ether');
 
         let preSaleBonusTable = $('#preSaleBonusTable');
         let preSaleBonusLength = $('tbody tr', preSaleBonusTable).length;
@@ -142,7 +145,7 @@ jQuery(document).ready(function($) {
                 preSaleBonusThresholds, preSaleBonusPercents,
                 preSale_baseRate, preSale_hardCap, ICO_baseRate, ICO_hardCap, 
                 ICO_bonusStartPercent, ICO_bonusDecreaseInterval, ICO_bonusDecreasePercent, ICO_intervalContributionLimit,
-                foundersPercent, minContribution
+                foundersPercent, minContribution, goal
             ],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
@@ -248,11 +251,17 @@ jQuery(document).ready(function($) {
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="minContribution"]', form).val(web3.fromWei(result, 'ether'));
         });
+        crowdsaleInstance.goal(function(error, result){
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
+            $('input[name="goal"]', form).val(web3.fromWei(result, 'ether'));
+        });
 
         crowdsaleInstance.currentRate(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="currentRate"]', form).val(result);
-            setCDRPriceSpanText($('#manage_currentRate_price'), result);
+            if(result != 0) {
+                setCDRPriceSpanText($('#manage_currentRate_price'), result);
+            }
         });
         crowdsaleInstance.totalCollected(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
@@ -384,6 +393,42 @@ jQuery(document).ready(function($) {
             });
         });
 
+    });
+
+    $('#claimRefundCheck').click(function(){
+        if(crowdsaleContract == null) return;
+        printError('');
+        let form = $('#manageCrowdsale');
+
+        let crowdsaleAddress = $('input[name=crowdsaleAddress]', form).val();
+        if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
+        let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
+
+        let beneficiary = $('input[name="claimRefundAddress"]', form).val();
+        crowdsaleInstance.refundAvailable(beneficiary, function(error, result){
+            if(!!error) {console.log('Contract info loading error:\n', error); return;}
+            $('#claimRefundCheckResult').html((result == 0)?'No refund available':web3.fromWei(result, 'ether')+' ETH available');
+        });
+    });
+    $('#claimRefundTo').click(function(){
+        if(crowdsaleContract == null) return;
+        printError('');
+        let form = $('#manageCrowdsale');
+
+        let crowdsaleAddress = $('input[name=crowdsaleAddress]', form).val();
+        if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
+        let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
+
+        let beneficiary = $('input[name="claimRefundAddress"]', form).val();
+        crowdsaleInstance.refundTo(beneficiary, function(error, tx){
+            if(!!error) {console.log('Can\'t execute refund:\n', error); return;}
+            console.log('Refund tx:', tx);
+            waitTxReceipt(tx, function(receipt){
+                console.log('Refund tx mined', receipt);
+                $('input[name="claimRefundAddress"]', form).val(beneficiary);
+                $('#claimRefundCheck').click();
+            });
+        });
     });
 
     $('#add-row').click(() => {
