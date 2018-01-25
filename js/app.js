@@ -52,6 +52,7 @@ jQuery(document).ready(function($) {
         $('input[name="ICO_intervalContributionLimit"]', form).val(700);
         $('input[name="foundersPercent"]', form).val(100);
         $('input[name="minContribution"]', form).val(0.1);
+        $('input[name="goal"]', form).val(1000);
 
         function addPreSaleBonus(threshold, percent){
             let tbody = $('#preSaleBonusTable tbody');
