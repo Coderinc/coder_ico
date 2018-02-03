@@ -170,6 +170,9 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }
     }
 
+    function getTokensForContribution(uint256 contribution) view public returns(uint256) {
+        return calculateTokenAmount(contribution);
+    }
     function calculateTokenAmount(uint256 contribution) view internal returns(uint256) {
         uint256 totalWeiCollected = totalCollected();
         if(state == State.Paused || state == State.Finished) {
@@ -195,18 +198,16 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         //iteratively calculate token amount
         while(amount > 0){                      //while there is something not yet converted
             if(bn < bonuses.length){            //if last bonus threshold not reached
-                uint256 rate = baseRate.add( baseRate.mul(bonuses[bn].percent).div(PERCENT_DIVIDER) );
                 uint256 remainder = bonuses[bn].threshold.sub(collected);
                 assert(remainder > 0);
                 if(amount <= remainder){        
                     //we do not reach threshold, so just convert and return
-                    return tokens.add(amount.mul(rate));
+                    return tokens.add(calcTokensWithBonus(amount, baseRate, bonuses[bn].percent));
                 }else{                          
                     //convert amount up to threshold and go to next iteration
-                    uint256 convert = amount.sub(remainder);
-                    tokens = tokens.add(convert.mul(rate));
-                    collected = collected.add(convert);
-                    amount = amount.sub(convert);
+                    tokens = tokens.add(calcTokensWithBonus(remainder, baseRate, bonuses[bn].percent));
+                    collected = collected.add(remainder);
+                    amount = amount.sub(remainder);
                     bn++;
                 }
             }else {
@@ -224,6 +225,11 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
             }
         }
         return 0;
+    }
+    function calcTokensWithBonus(uint256 contribution, uint256 baseRate, uint32 bonusPercent) pure internal returns (uint256) {
+        uint256 baseTokens = contribution.mul(baseRate);
+        uint256 bonus = baseTokens.mul(bonusPercent).div(PERCENT_DIVIDER);
+        return baseTokens.add(bonus);
     }
 
 

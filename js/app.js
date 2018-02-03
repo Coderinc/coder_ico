@@ -42,7 +42,7 @@ jQuery(document).ready(function($) {
         let nowTimestamp = d.setMinutes(0, 0, 0);
 
         d = new Date(nowTimestamp+1*60*60*1000);
-        $('input[name="preSale_baseRate"]', form).val(2000);
+        $('input[name="preSale_baseRate"]', form).val(1000);
         $('input[name="preSale_hardCap"]', form).val(10000);
         $('input[name="ICO_baseRate"]', form).val(1000);
         $('input[name="ICO_hardCap"]', form).val(20000);
@@ -62,7 +62,7 @@ jQuery(document).ready(function($) {
         addBonus('preSale', 1000, 50);
         addBonus('preSale', 2000, 45);
         addBonus('preSale', 3000, 40);
-        addBonus('preSale', 4000, 35);
+        addBonus('preSale', 10000, 35);
         addBonus($('input[name="preSale_hardCap"]', form).val(), 30);
         $('input[name="preSaleBonus_threshold\\['+($('#preSaleBonusTable tbody tr').length-1)+'\\]"]', form).prop('readonly', true);
         $('input[name="preSale_hardCap"]', form).change(function(){
