@@ -21,27 +21,22 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     uint256   public ICO_hardCap;                   //hard cap for the main sale round in wei
     uint256   public ICO_collected;                 //how much wei already collected at main sale
 
-    uint8     public ICO_bonusStartPercent;         //Start bonus (in percents  of contribution)
-    uint32    public ICO_bonusDecreaseInterval;     //Interval when bonus decreases during ICO
-    uint8     public ICO_bonusDecreasePercent;      //Bonus decrease (in percents of contribution)
-    uint256   public ICO_intervalContributionLimit; //How much wei we can accept during one interval  
-
     uint256   public minContribution;                //Do not accept contributions lower than this value
     uint8     public foundersPercent;                //Percent of tokens that will be minted to founders (including timelocks)
     uint256   public goal;                           //Minimal amount of collected Ether (if not reached - ETH may be refunded)
 
 
-    struct PreSaleBonus {
+    struct Bonus {
         uint256 threshold;                          //Maximum amount collected, to receiv this bonus (if collected more - look for next bonus)
-        uint32 bonusPercent;                        //F bonus percent, so that bonus = amount.mul(bonusPercent).div(PERCENT_DIVIDER)
+        uint32 percent;                        //F bonus percent, so that bonus = amount.mul(percent).div(PERCENT_DIVIDER)
     }
-    PreSaleBonus[] public preSaleBonuses;           //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap
+    Bonus[] public preSaleBonuses;                  //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap
+    Bonus[] public icoBonuses;                      //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap
 
     enum State { Paused, PreSale, ICO, Finished }
     State public state;                                     //current state of the contracts
     CoderCoin public token;                                 //token for crowdsale
     mapping(address => bool) public whitelist;              //who is allowed to do purshases
-    mapping(uint256 => uint256) public intervalCollected;   //mapping of intervals to weis collected during this interval
     mapping(address => uint256) contributions;              //amount of ether (in wei)received from a buyer
 
 
@@ -61,8 +56,8 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
 
     function CoderCrowdsale (
         uint256[] preSaleBonusThresholds, uint32[] preSaleBonusPercents, 
+        uint256[] icoBonusThresholds, uint32[] icoBonusPercents, 
         uint256 _preSale_baseRate, uint256 _preSale_hardCap, uint256 _ICO_baseRate, uint256 _ICO_hardCap,
-        uint8 _ICO_bonusStartPercent, uint32 _ICO_bonusDecreaseInterval, uint8 _ICO_bonusDecreasePercent, uint256 _ICO_intervalContributionLimit,
         uint8 _foundersPercent, uint256 _minContribution, uint256 _goal
         ) public {
 
@@ -70,23 +65,20 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         require(_preSale_hardCap > 0);
         require(_ICO_baseRate > 0);
         require(_ICO_hardCap > 0);
-        require(_ICO_bonusDecreaseInterval > 0);
-        require(_ICO_bonusStartPercent > 0 && _ICO_bonusStartPercent <= PERCENT_DIVIDER);
-        require(_ICO_bonusDecreasePercent > 0 && _ICO_bonusDecreasePercent < _ICO_bonusStartPercent);
-        require(_ICO_intervalContributionLimit <= _ICO_hardCap);
         require(_minContribution < _preSale_hardCap);
-        require(_minContribution < _ICO_intervalContributionLimit);
+        require(_minContribution < _ICO_hardCap);
         
         state = State.Paused;
 
-        initPreSale(preSaleBonusThresholds, preSaleBonusPercents, _preSale_baseRate, _preSale_hardCap);
+        preSale_baseRate = _preSale_baseRate;
+        preSale_hardCap = _preSale_hardCap;
+        initBonusArray(preSaleBonuses, preSaleBonusThresholds, preSaleBonusPercents);
+        require(preSaleBonuses[preSaleBonuses.length - 1].threshold <= _preSale_hardCap);
 
         ICO_baseRate = _ICO_baseRate;
         ICO_hardCap = _ICO_hardCap;
-        ICO_bonusDecreaseInterval = _ICO_bonusDecreaseInterval;
-        ICO_bonusStartPercent = _ICO_bonusStartPercent;
-        ICO_bonusDecreasePercent = _ICO_bonusDecreasePercent;
-        ICO_intervalContributionLimit = _ICO_intervalContributionLimit;
+        initBonusArray(icoBonuses, icoBonusThresholds, icoBonusPercents);
+        require(icoBonuses[icoBonuses.length - 1].threshold <= _ICO_hardCap);
 
         foundersPercent = _foundersPercent;
         minContribution = _minContribution;
@@ -94,22 +86,19 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
 
         token = new CoderCoin();                    //creating token in constructor
     }
-    function initPreSale(uint256[] preSaleBonusThresholds, uint32[] preSaleBonusPercents, uint256 _preSale_baseRate, uint256 _preSale_hardCap) internal {
-        preSale_baseRate = _preSale_baseRate;
-        preSale_hardCap = _preSale_hardCap;
-
-        uint256 prevMaxCollected = 0;
-        require(preSaleBonusThresholds.length == preSaleBonusPercents.length);
-        preSaleBonuses.length = preSaleBonusThresholds.length;
-        for(uint8 i=0; i < preSaleBonuses.length; i++){
-            preSaleBonuses[i] = PreSaleBonus({threshold:preSaleBonusThresholds[i], bonusPercent:preSaleBonusPercents[i]});
-            PreSaleBonus storage psb = preSaleBonuses[i];
-            require(prevMaxCollected < psb.threshold);
-            prevMaxCollected = psb.threshold;
+    function initBonusArray(Bonus[] storage bonuses, uint256[] thresholds, uint32[] percents) internal {
+        require(thresholds.length == percents.length);
+        uint256 prevThreshold = 0;
+        bonuses.length = thresholds.length;
+        for(uint8 i=0; i < bonuses.length; i++){
+            bonuses[i] = Bonus({threshold:thresholds[i], percent:percents[i]});
+            Bonus storage b = bonuses[i];
+            require(prevThreshold < b.threshold);
+            prevThreshold = b.threshold;
         }
-
-        require(preSaleBonuses[preSaleBonuses.length - 1].threshold == _preSale_hardCap);
     }
+
+
 
     /**
     * @notice To buy tokens just send ether here
@@ -118,9 +107,8 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         require(msg.value >= minContribution);
         require(whitelist[msg.sender]);
         require(crowdsaleOpen());
-        uint256 rate = currentRate();
-        assert(rate > 0);
-        uint256 buyerTokens = rate.mul(msg.value);
+
+        uint256 buyerTokens = calculateTokenAmount(msg.value);
 
         if (state == State.PreSale) {
             preSale_collected = preSale_collected.add(msg.value);
@@ -128,10 +116,6 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }else if (state == State.ICO) {
             ICO_collected = ICO_collected.add(msg.value);
             require(ICO_collected <= ICO_hardCap);
-
-            uint256 currentInterval = calculateCurrentInterval();
-            intervalCollected[currentInterval] = intervalCollected[currentInterval].add(msg.value);
-            require(intervalCollected[currentInterval] <= ICO_intervalContributionLimit);
         }
 
         contributions[msg.sender] = contributions[msg.sender].add(msg.value);
@@ -145,8 +129,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     function crowdsaleOpen() constant public returns(bool){
         return  (state != State.Paused) &&
                 (state != State.Finished) &&
-                !hardCapReached(state) &&
-                !currentIntervalCapReached();
+                !hardCapReached(state);
     }
     /**
     * @notice How many tokens you receive for 1 ETH
@@ -166,34 +149,84 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
 
     function calculatePreSaleRate() constant public returns(uint256) {
         uint256 totalWeiCollected = totalCollected();
-        uint32 bonus = 0;
-        for(uint8 i=0; i < preSaleBonuses.length; i++){
-            PreSaleBonus storage psb = preSaleBonuses[i];
-            if(totalWeiCollected < psb.threshold){
-                bonus = psb.bonusPercent;    
-                break;
-            } 
+
+        uint32 bonusPercent = findCurrentBonusPercent(preSaleBonuses, totalWeiCollected);
+        if(bonusPercent > 0){
+            return preSale_baseRate.add( preSale_baseRate.mul(bonusPercent).div(PERCENT_DIVIDER) );
+        }else{
+            return preSale_baseRate;
         }
-        uint256 rate = preSale_baseRate;
-        uint256 bonusRate = rate.mul(bonus).div(PERCENT_DIVIDER); //divide by 100 to convert bonusPercentage to percent
-        rate = rate.add(bonusRate);                               //add bonus tokens to base rate
-        return rate;
     }
 
     function calculateICOrate() constant public returns(uint256){
         if(ICO_startTimestamp == 0) return 0;
+        uint256 totalWeiCollected = totalCollected();
 
-        uint256 currentInterval = calculateCurrentInterval();
-        uint256 decreaseBonusPercent = ICO_bonusDecreasePercent * currentInterval;
-        assert(decreaseBonusPercent / currentInterval == ICO_bonusDecreasePercent); //SafeMath doesn't work with uint8 so check this manualy
-        uint256 bonusPercentage = (ICO_bonusStartPercent > decreaseBonusPercent) ? (ICO_bonusStartPercent - decreaseBonusPercent) : 0;
-        assert(bonusPercentage <= PERCENT_DIVIDER);
-
-        uint256 rate = ICO_baseRate;
-        uint256 bonusRate = rate.mul(bonusPercentage).div(PERCENT_DIVIDER);
-        rate = rate.add(bonusRate);                                         //add bonus tokens to base rate
-        return rate;
+        uint32 bonusPercent = findCurrentBonusPercent(icoBonuses, totalWeiCollected);
+        if(bonusPercent > 0){
+            return ICO_baseRate.add( ICO_baseRate.mul(bonusPercent).div(PERCENT_DIVIDER) );
+        }else{
+            return ICO_baseRate;
+        }
     }
+
+    function calculateTokenAmount(uint256 contribution) view internal returns(uint256) {
+        uint256 totalWeiCollected = totalCollected();
+        if(state == State.Paused || state == State.Finished) {
+            return 0;
+        } else if(state == State.PreSale) {
+            return calculateTokenAmount(contribution, preSaleBonuses, preSale_baseRate, totalWeiCollected);
+        } else if(state == State.ICO){
+            return calculateTokenAmount(contribution, icoBonuses, ICO_baseRate, totalWeiCollected);
+        } else {
+            revert();   //state is wrong
+        }
+    }
+
+    function calculateTokenAmount(uint256 contribution, Bonus[] storage bonuses, uint256 baseRate, uint256 alreadyCollected) view internal returns(uint256) {
+        uint256 amount = contribution;
+        uint256 collected = alreadyCollected;
+        uint256 tokens = 0;
+        uint8 bn;
+        //find next threshold
+        for(bn = 0; bn < bonuses.length; bn++){
+            if(collected < bonuses[bn].threshold) break;
+        }
+        //iteratively calculate token amount
+        while(amount > 0){                      //while there is something not yet converted
+            if(bn < bonuses.length){            //if last bonus threshold not reached
+                uint256 rate = baseRate.add( baseRate.mul(bonuses[bn].percent).div(PERCENT_DIVIDER) );
+                uint256 remainder = bonuses[bn].threshold.sub(collected);
+                assert(remainder > 0);
+                if(amount <= remainder){        
+                    //we do not reach threshold, so just convert and return
+                    return tokens.add(amount.mul(rate));
+                }else{                          
+                    //convert amount up to threshold and go to next iteration
+                    uint256 convert = amount.sub(remainder);
+                    tokens = tokens.add(convert.mul(rate));
+                    collected = collected.add(convert);
+                    amount = amount.sub(convert);
+                    bn++;
+                }
+            }else {
+                //no bonus available, so just convert rest amount
+                return tokens.add(amount.mul(baseRate));
+            }
+        }
+        revert();   //we should never reach this point
+    }
+
+    function findCurrentBonusPercent(Bonus[] storage bonuses, uint256 collected) view internal returns(uint32) {
+        for(uint8 bn = 0; bn < bonuses.length; bn++){
+            if(collected < bonuses[bn].threshold){
+                return bonuses[bn].percent;
+            }
+        }
+        return 0;
+    }
+
+
 
     function hardCapReached(State _state) constant public returns(bool){
         if(_state == State.PreSale) {
@@ -205,21 +238,6 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }
     }
 
-    function calculateCurrentInterval() constant public returns(uint256){
-        if(ICO_startTimestamp == 0) return 0;
-        assert(now >= ICO_startTimestamp);
-        uint256 saleRunningSeconds = now - ICO_startTimestamp;
-        return saleRunningSeconds.div(ICO_bonusDecreaseInterval); //remainder will be discarded
-    }
-
-    function currentIntervalCollected() constant public returns(uint256){
-        if(state != State.ICO) return 0;
-        uint256 currentInterval = calculateCurrentInterval();
-        return intervalCollected[currentInterval];
-    }
-    function currentIntervalCapReached() constant public returns(bool){
-        return currentIntervalCollected() >= ICO_intervalContributionLimit;
-    }
 
     /**
     * @notice Allow/Deny to make purshases from specified address
