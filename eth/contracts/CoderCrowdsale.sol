@@ -78,7 +78,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         ICO_baseRate = _ICO_baseRate;
         ICO_hardCap = _ICO_hardCap;
         initBonusArray(icoBonuses, icoBonusThresholds, icoBonusPercents);
-        require(icoBonuses[icoBonuses.length - 1].threshold <= _ICO_hardCap);
+        require(icoBonuses[icoBonuses.length - 1].threshold <= _preSale_hardCap.add(_ICO_hardCap));
 
         foundersPercent = _foundersPercent;
         minContribution = _minContribution;

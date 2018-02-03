@@ -47,26 +47,23 @@ jQuery(document).ready(function($) {
         $('input[name="ICO_baseRate"]', form).val(1000);
         $('input[name="ICO_hardCap"]', form).val(20000);
         $('input[name="ICO_bonusStartPercent"]', form).val(25);
-        $('input[name="ICO_bonusDecreaseInterval"]', form).val(60*60*24);
-        $('input[name="ICO_bonusDecreasePercent"]', form).val(1);
-        $('input[name="ICO_intervalContributionLimit"]', form).val(700);
         $('input[name="foundersPercent"]', form).val(100);
-        $('input[name="minContribution"]', form).val(0.1);
+        $('input[name="minContribution"]', form).val(0.01);
         $('input[name="goal"]', form).val(1000);
 
-        function addPreSaleBonus(threshold, percent){
-            let tbody = $('#preSaleBonusTable tbody');
+        function addBonus(prefix, threshold, percent){
+            let tbody = $('#'+prefix+'BonusTable tbody');
             let num = $('tr', tbody).length;
             $('<tr></tr>').appendTo(tbody)
-                .append('<td><input type="number" name="preSaleBonus_threshold['+num+']" value="'+threshold+'" class="number" min="0"></td>')
-                .append('</td><td><input type="number" name="preSaleBonus_precent['+num+']" value="'+percent+'" class="number" min="0"></td>');
+                .append('<td><input type="number" name="'+prefix+'Bonus_threshold['+num+']" value="'+threshold+'" class="number" min="0"></td>')
+                .append('</td><td><input type="number" name="'+prefix+'Bonus_precent['+num+']" value="'+percent+'" class="number" min="0"></td>');
         }
-        addPreSaleBonus(500, 75);
-        addPreSaleBonus(1000, 50);
-        addPreSaleBonus(2000, 45);
-        addPreSaleBonus(3000, 40);
-        addPreSaleBonus(4000, 35);
-        addPreSaleBonus($('input[name="preSale_hardCap"]', form).val(), 30);
+        addBonus('preSale', 500, 75);
+        addBonus('preSale', 1000, 50);
+        addBonus('preSale', 2000, 45);
+        addBonus('preSale', 3000, 40);
+        addBonus('preSale', 4000, 35);
+        addBonus($('input[name="preSale_hardCap"]', form).val(), 30);
         $('input[name="preSaleBonus_threshold\\['+($('#preSaleBonusTable tbody tr').length-1)+'\\]"]', form).prop('readonly', true);
         $('input[name="preSale_hardCap"]', form).change(function(){
             let tbody = $('#preSaleBonusTable tbody');
@@ -74,6 +71,15 @@ jQuery(document).ready(function($) {
             let last = $('tr', tbody).length - 1;
             $('input[name="preSaleBonus_threshold\\['+last+'\\]"]', form).val(hardCap);
         });
+        addBonus('ICO', 5000, 30);
+        addBonus('ICO', 7000, 25);
+        addBonus('ICO', 10000, 20);
+        addBonus('ICO', 15000, 15);
+        addBonus('ICO', 20000, 10);
+        addBonus('ICO', 25000, 5);
+        $('#ICOBonusAddRow').click(function(){
+            addBonus('ICO', '', '');
+        })
 
 
         //additional info
@@ -114,38 +120,42 @@ jQuery(document).ready(function($) {
         let ICO_baseRate = $('input[name="ICO_baseRate"]', form).val();
         let ICO_hardCap = web3.toWei($('input[name="ICO_hardCap"]', form).val(), 'ether');
         
-        let ICO_bonusStartPercent = $('input[name="ICO_bonusStartPercent"]', form).val();
-        let ICO_bonusDecreaseInterval = $('input[name="ICO_bonusDecreaseInterval"]', form).val();
-        let ICO_bonusDecreasePercent = $('input[name="ICO_bonusDecreasePercent"]', form).val();
-        let ICO_intervalContributionLimit = web3.toWei($('input[name="ICO_intervalContributionLimit"]', form).val(), 'ether');
-
         let foundersPercent  = $('input[name="foundersPercent"]', form).val();
         let minContribution  = web3.toWei($('input[name="minContribution"]', form).val(), 'ether');
         let goal  = web3.toWei($('input[name="goal"]', form).val(), 'ether');
 
-        let preSaleBonusTable = $('#preSaleBonusTable');
-        let preSaleBonusLength = $('tbody tr', preSaleBonusTable).length;
-        let preSaleBonusThresholds = new Array();
-        let preSaleBonusPercents = new Array();
-        let prevThreshold = 0;
-        for(let i = 0; i < preSaleBonusLength; i++){
-            preSaleBonusThresholds[i] = web3.toWei($('input[name=preSaleBonus_threshold\\['+i+'\\]]', preSaleBonusTable).val(), 'ether');
-            preSaleBonusPercents[i] =Number($('input[name=preSaleBonus_precent\\['+i+'\\]]', preSaleBonusTable).val());
-            if(prevThreshold >= preSaleBonusThresholds[i]){
-                printError('Wrong PreSale bonus sequence');
-                return;
+        function parseBonusTable(prefix){
+            let table = $('#'+prefix+'BonusTable');
+            let count = $('tbody tr', preSaleBonusTable).length;
+            let thresholds = new Array();
+            let percents = new Array();
+            let prev = 0;
+            for(let i = 0; i < count; i++){
+                let ts = $('input[name='+prefix+'Bonus_threshold\\['+i+'\\]]', table).val().trim();
+                let ps = $('input[name='+prefix+'Bonus_precent\\['+i+'\\]]', table).val().trim();
+                if(ts == '' && ps == '') continue;
+                let t = web3.toWei(ts, 'ether'); let p = Number(ps);
+                thresholds.push(t); percents.push(p);
+                if(prev >= Number(t)){
+                    printError('Wrong '+prefix+' bonus sequence');
+                    return;
+                }
+                prev = Number(t);
+            }
+            return {
+                'thresholds': thresholds,
+                'percents': percents
             }
         }
-        if(preSaleBonusThresholds[preSaleBonusLength-1] != preSale_hardCap){
-            printError('Last PreSale bonus threshold should be equal to PreSale hard cap');
-            return;
-        }
+
+        let preSaleBonuses = parseBonusTable('preSale');
+        let icoBonuses = parseBonusTable('ICO');
 
         publishContract(crowdsaleContract, 
             [
-                preSaleBonusThresholds, preSaleBonusPercents,
+                preSaleBonuses.thresholds, preSaleBonuses.percents,
+                icoBonuses.thresholds, icoBonuses.percents,
                 preSale_baseRate, preSale_hardCap, ICO_baseRate, ICO_hardCap, 
-                ICO_bonusStartPercent, ICO_bonusDecreaseInterval, ICO_bonusDecreasePercent, ICO_intervalContributionLimit,
                 foundersPercent, minContribution, goal
             ],
             function(tx){
@@ -227,23 +237,6 @@ jQuery(document).ready(function($) {
             $('input[name="ICO_collected"]', form).val(web3.fromWei(result, 'ether'));
         });
 
-        crowdsaleInstance.ICO_bonusStartPercent(function(error, result){
-            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
-            $('input[name="ICO_bonusStartPercent"]', form).val(result);
-        });
-        crowdsaleInstance.ICO_bonusDecreaseInterval(function(error, result){
-            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
-            $('input[name="ICO_bonusDecreaseInterval"]', form).val(result);
-        });
-        crowdsaleInstance.ICO_bonusDecreasePercent(function(error, result){
-            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
-            $('input[name="ICO_bonusDecreasePercent"]', form).val(result);
-        });
-        crowdsaleInstance.ICO_intervalContributionLimit(function(error, result){
-            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
-            $('input[name="ICO_intervalContributionLimit"]', form).val(web3.fromWei(result, 'ether'));
-        });
-
         crowdsaleInstance.foundersPercent(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="foundersPercent"]', form).val(result);
@@ -274,16 +267,16 @@ jQuery(document).ready(function($) {
             $('input[name=balance]', form).val(web3.fromWei(result, 'ether'));
         });
 
-        function loadPreSaleBonuses(){
-            let tbody = $('#preSaleBonusTableInfo tbody');
+        function loadBonuses(prefix){
+            let tbody = $('#'+prefix+'BonusTableInfo tbody');
             tbody.empty();
+            let func = prefix == 'preSale'?'preSaleBonuses':'icoBonuses';
             function loadBonus(num){
-                crowdsaleInstance.preSaleBonuses(num, function(error, result){
+                crowdsaleInstance[func](num, function(error, result){
                     if(!!error) {console.log('Contract info loading error:\n', error);  return;}
-                    //console.log('loadPreSaleBonuses_loadBonus',num, result);
                     let threshold = web3.fromWei(result[0], 'ether');
                     let percent = web3.toDecimal(result[1]);
-                    if(threshold != 0 && num < 10){
+                    if(threshold != 0 && num < 300){
                         $('<tr></tr>').appendTo(tbody)
                             .append('<td>'+threshold+'</td>')
                             .append('<td>'+percent+'</td>');
@@ -293,7 +286,8 @@ jQuery(document).ready(function($) {
             }
             loadBonus(0);
         }
-        loadPreSaleBonuses();
+        loadBonuses('preSale');
+        loadBonuses('ICO');
 
         crowdsaleInstance.state(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
