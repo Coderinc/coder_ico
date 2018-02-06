@@ -21,24 +21,25 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     uint256   public ICO_hardCap;                   //hard cap for the main sale round in wei
     uint256   public ICO_collected;                 //how much wei already collected at main sale
 
-    uint256   public minContribution;                //Do not accept contributions lower than this value
-    uint8     public foundersPercent;                //Percent of tokens that will be minted to founders (including timelocks)
-    uint256   public goal;                           //Minimal amount of collected Ether (if not reached - ETH may be refunded)
+    uint256   public minContribution;               //Do not accept contributions lower than this value
+    uint8     public foundersPercent;               //Percent of tokens that will be minted to founders (including timelocks)
+    uint256   public goal;                          //Minimal amount of collected Ether (if not reached - ETH may be refunded)
 
 
     struct Bonus {
         uint256 threshold;                          //Maximum amount collected, to receiv this bonus (if collected more - look for next bonus)
-        uint32 percent;                        //F bonus percent, so that bonus = amount.mul(percent).div(PERCENT_DIVIDER)
+        uint32 percent;                             //Bonus percent, so that bonus = amount.mul(percent).div(PERCENT_DIVIDER)
     }
     Bonus[] public preSaleBonuses;                  //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap
     Bonus[] public icoBonuses;                      //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap
 
     enum State { Paused, PreSale, ICO, Finished }
-    State public state;                                     //current state of the contracts
-    CoderCoin public token;                                 //token for crowdsale
-    mapping(address => bool) public whitelist;              //who is allowed to do purshases
-    mapping(address => uint256) contributions;              //amount of ether (in wei)received from a buyer
+    State public state;                             //current state of the contracts
+    CoderCoin public token;                         //token for crowdsale
+    mapping(address => bool) public whitelist;      //who is allowed to do purshases
+    mapping(address => uint256) contributions;      //amount of ether (in wei)received from a buyer
 
+    address public manager;                         //Address which can do whitelisting
 
     /**
     * event for token purchase logging
@@ -54,6 +55,17 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     event TokenTimelockCreated(address TokenTimelock, uint64 releaseTimestamp, address beneficiary, uint256 amount);
 
 
+    /**
+    * @dev Throws if called by any account other than the owner.
+    */
+    modifier onlyOwnerOrManager() {
+        require(msg.sender == owner || msg.sender == manager);
+        _;
+    }
+
+    /**
+    * @notice Constructor of Crowdsale
+    */
     function CoderCrowdsale (
         uint256[] preSaleBonusThresholds, uint32[] preSaleBonusPercents, 
         uint256[] icoBonusThresholds, uint32[] icoBonusPercents, 
@@ -85,7 +97,15 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         goal = _goal;
 
         token = new CoderCoin();                    //creating token in constructor
+        manager = owner;
     }
+
+    /**
+    * @dev Initialize bonus levels
+    * @param bonuses Where to store bonus levels
+    * @param thresholds Array of bonuls level thresholds
+    * @param percents Array of bonus percents
+    */
     function initBonusArray(Bonus[] storage bonuses, uint256[] thresholds, uint32[] percents) internal {
         require(thresholds.length == percents.length);
         uint256 prevThreshold = 0;
@@ -97,8 +117,6 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
             prevThreshold = b.threshold;
         }
     }
-
-
 
     /**
     * @notice To buy tokens just send ether here
@@ -131,9 +149,10 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
                 (state != State.Finished) &&
                 !hardCapReached(state);
     }
+
     /**
-    * @notice How many tokens you receive for 1 ETH
-    * @return conversion rate
+    * @notice Calculates current rate
+    * @return rate (which how much tokens will be sent for 1 ETH)
     */
     function currentRate() public constant returns(uint256){
         if(state == State.Paused || state == State.Finished) {
@@ -147,6 +166,10 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }
     }
 
+    /**
+    * @notice Calculates current rate for Pre-Sale
+    * @return rate (which how much tokens will be sent for 1 ETH)
+    */
     function calculatePreSaleRate() constant public returns(uint256) {
         uint256 totalWeiCollected = totalCollected();
 
@@ -158,6 +181,10 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }
     }
 
+    /**
+    * @notice Calculates current rate for ICO
+    * @return rate (which how much tokens will be sent for 1 ETH)
+    */
     function calculateICOrate() constant public returns(uint256){
         if(ICO_startTimestamp == 0) return 0;
         uint256 totalWeiCollected = totalCollected();
@@ -170,9 +197,21 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }
     }
 
+    /**
+    * @notice Calculate amount of tokens to send to investor for specified contribution
+    * @dev This is an alias for calculateTokenAmount(uint256) which can be called externally
+    * @param contribution Amount of ether received
+    * @return Amount of tokens for contribution
+    */
     function getTokensForContribution(uint256 contribution) view public returns(uint256) {
         return calculateTokenAmount(contribution);
     }
+
+    /**
+    * @dev Calculate amount of tokens to send to investor for specified contribution
+    * @param contribution Amount of ether received
+    * @return Amount of tokens for contribution
+    */
     function calculateTokenAmount(uint256 contribution) view internal returns(uint256) {
         uint256 totalWeiCollected = totalCollected();
         if(state == State.Paused || state == State.Finished) {
@@ -186,6 +225,14 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }
     }
 
+    /**
+    * @dev Calculate amount of tokens to send to investor for specified contribution
+    * @param contribution Amount of ether received
+    * @param bonuses Array of bonus levels
+    * @param baseRate Current rate without bonuses
+    * @param alreadyCollected How much ether is already collected
+    * @return Amount of tokens for contribution
+    */
     function calculateTokenAmount(uint256 contribution, Bonus[] storage bonuses, uint256 baseRate, uint256 alreadyCollected) view internal returns(uint256) {
         uint256 amount = contribution;
         uint256 collected = alreadyCollected;
@@ -218,6 +265,12 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         revert();   //we should never reach this point
     }
 
+    /**
+    * @dev Scan array of bonuses for current bonus level
+    * @param bonuses Array of bonuses to scan
+    * @param collected How much ether is already collected
+    * @return Current bonus percent
+    */
     function findCurrentBonusPercent(Bonus[] storage bonuses, uint256 collected) view internal returns(uint32) {
         for(uint8 bn = 0; bn < bonuses.length; bn++){
             if(collected < bonuses[bn].threshold){
@@ -226,14 +279,35 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }
         return 0;
     }
+
+    /**
+    * @dev Calculates how much tokens should be sended for the specified amount of ether
+    * NOTE: this does NOT check if moving to next bonus level is required,
+    * so caller of this function SHOULD check it
+    * @param contribution Amount of ether received
+    * @param baseRate Current rate without bonuses
+    * @param bonusPercent Current bonus percent
+    * @return Amount of tokens for contribution
+    */
     function calcTokensWithBonus(uint256 contribution, uint256 baseRate, uint32 bonusPercent) pure internal returns (uint256) {
         uint256 baseTokens = contribution.mul(baseRate);
         uint256 bonus = baseTokens.mul(bonusPercent).div(PERCENT_DIVIDER);
         return baseTokens.add(bonus);
     }
 
+    /**
+    * @notice Calculates how much ether is collected
+    * @return Amount collected during PreICO and ICO
+    */
+    function totalCollected() constant public returns(uint256){
+        return preSale_collected.add(ICO_collected);   //total wei raised in each round
+    }
 
-
+    /**
+    * @notice Check if hard cap for the state is reached
+    * @param _state State to check
+    * @return If hard cap is reached
+    */
     function hardCapReached(State _state) constant public returns(bool){
         if(_state == State.PreSale) {
             return preSale_collected >= preSale_hardCap;
@@ -244,14 +318,31 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         }
     }
 
+    /**
+    * @notice Change manager address which is allowed to whitelist investors
+    * @param _manager Address of new manager
+    */
+    function setManager(address _manager) onlyOwner public {
+        require(manager != address(0));
+        manager = _manager;
+    }
 
     /**
     * @notice Allow/Deny to make purshases from specified address
     * @param who Address which is allowed to make purshase
     * @param allow True if address "who" allowed to purshase. False for revoke previous allowance
     */
-    function whitelistAddress(address who, bool allow) public onlyOwner {
+    function whitelistAddress(address who, bool allow) public onlyOwnerOrManager {
         whitelist[who] = allow;
+    }
+    /**
+    * @notice Allow to make purshases from specified addresses
+    * @param who Array of address which is allowed to make purshase
+    */
+    function whitelistAddresses(address[] who) public onlyOwnerOrManager {
+        for(uint16 i=0; i < who.length; i++){
+            whitelist[who[i]] = true;
+        }
     }
 
     /**
@@ -270,10 +361,6 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
             ICO_startTimestamp = now;
         }
         state = newState;
-    }
-
-    function totalCollected() constant public returns(uint256){
-        return preSale_collected.add(ICO_collected);   //total wei raised in each round
     }
 
     /**
