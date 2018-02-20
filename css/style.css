@@ -32,3 +32,19 @@ input.ethAddress, input.ethTx {
 #clock {
     width: 30em;
 }
+
+textarea.addressList {
+    width: 400px;
+    height: 100px;
+    display: block;
+}
+#whitelistAddressesParsed {
+    font-family: monospace;
+}
+#whitelistAddressesParseResult {
+    display: none;
+}
+textarea[name=whitelistAddressesParsedJSON] {
+    display: none;
+}
+

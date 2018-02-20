@@ -370,6 +370,69 @@ jQuery(document).ready(function($) {
         })
     });
 
+    $('#whitelistAddressesParse').click(function(){
+        if(crowdsaleContract == null) return;
+        printError('');
+        let form = $('#manageCrowdsale');
+            
+        let parseLog = $('#whitelistAddressesParseLog');
+        let parseResult = $('#whitelistAddressesParsed');                    
+        let parseResultJSON =  $('textarea[name="whitelistAddressesParsedJSON"]', form);
+        let parsed = new Array();
+
+
+        let addressesText = $('textarea[name="whitelistAddresses"]', form).val().trim();
+        let parseErrors = 0;
+        addressesText.split('\n').forEach(function(elem, idx){
+            let addr = elem.trim();
+            if(web3.isAddress(addr)){
+                parsed.push(addr);
+                parseResult.append('<div>'+addr+'</div>');
+            }else{
+                parseErrors++;
+                if(!addr.startsWith('0x') || addr.length != 42){
+                    parseLog.append('<div>Line '+(idx+1)+': <i>"'+elem+'"</i> is not an ethereum address</div>')    
+                }else{
+                    let addrFix = addr.toLowerCase();
+                    if(web3.utils.isAddress(addrFix)){
+                        parseLog.append('<div>Line '+(idx+1)+': <i>'+addr+'</i> has wrong checksumm</div>')    
+                        //parsed.push(addrFix);
+                    }else {
+                        parseLog.append('<div>Line '+(idx+1)+': <i>'+addr+'</i> has corect format but can not be parsed</div>')
+                    }
+                }
+            }
+        });
+        parseLog.append('<div>Parsed '+parsed.length+' addresses. Failed to parse: '+parseErrors+'</div>');
+        parseResultJSON.val(JSON.stringify(parsed));
+        $('#whitelistAddressesParseResult').show();
+    });
+    $('#whitelistAddressesSubmit').click(function(){
+        if(crowdsaleContract == null) return;
+        printError('');
+        let form = $('#manageCrowdsale');
+
+        let crowdsaleAddress = $('input[name="crowdsaleAddress"]', form).val();
+        if(!web3.isAddress(crowdsaleAddress)){printError('Crowdsale address is not an Ethereum address'); return;}
+        let crowdsaleInstance = web3.eth.contract(crowdsaleContract.abi).at(crowdsaleAddress);
+
+        let parseResultJSON =  $('textarea[name="whitelistAddressesParsedJSON"]', form).val();
+        let addresses = JSON.parse(parseResultJSON);
+        if(typeof addresses != 'object' || addresses.length == 0){
+            console.error('Can not parse addresses');
+            return;
+        }
+
+        crowdsaleInstance.whitelistAddresses(addresses, function(error, tx){
+            if(!!error) {console.log('Contract info loading error:\n', error); return;}
+            console.log('WhitelistAddresses transaction published. Tx: '+tx);
+            waitTxReceipt(tx, function(receipt){
+                console.log('WhitelistAddresses tx mined', receipt);
+            });
+        });
+    });
+
+
     $('#crowdsaleClaim').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
