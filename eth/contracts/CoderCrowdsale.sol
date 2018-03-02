@@ -144,7 +144,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     /**
     * @notice Check if crowdsale is open or not
     */
-    function crowdsaleOpen() constant public returns(bool){
+    function crowdsaleOpen() view public returns(bool){
         return  (state != State.Paused) &&
                 (state != State.Finished) &&
                 !hardCapReached(state);
@@ -154,7 +154,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     * @notice Calculates current rate
     * @return rate (which how much tokens will be sent for 1 ETH)
     */
-    function currentRate() public constant returns(uint256){
+    function currentRate() view public returns(uint256){
         if(state == State.Paused || state == State.Finished) {
             return 0;
         } else if(state == State.PreSale) {
@@ -170,7 +170,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     * @notice Calculates current rate for Pre-Sale
     * @return rate (which how much tokens will be sent for 1 ETH)
     */
-    function calculatePreSaleRate() constant public returns(uint256) {
+    function calculatePreSaleRate() view public returns(uint256) {
         uint256 totalWeiCollected = totalCollected();
 
         uint32 bonusPercent = findCurrentBonusPercent(preSaleBonuses, totalWeiCollected);
@@ -185,7 +185,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     * @notice Calculates current rate for ICO
     * @return rate (which how much tokens will be sent for 1 ETH)
     */
-    function calculateICOrate() constant public returns(uint256){
+    function calculateICOrate() view public returns(uint256){
         if(ICO_startTimestamp == 0) return 0;
         uint256 totalWeiCollected = totalCollected();
 
@@ -299,7 +299,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     * @notice Calculates how much ether is collected
     * @return Amount collected during PreICO and ICO
     */
-    function totalCollected() constant public returns(uint256){
+    function totalCollected() view public returns(uint256){
         return preSale_collected.add(ICO_collected);   //total wei raised in each round
     }
 
@@ -308,7 +308,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
     * @param _state State to check
     * @return If hard cap is reached
     */
-    function hardCapReached(State _state) constant public returns(bool){
+    function hardCapReached(State _state) view public returns(bool){
         if(_state == State.PreSale) {
             return preSale_collected >= preSale_hardCap;
         }else if(_state == State.ICO){
@@ -423,7 +423,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         beneficiary.transfer(value);
         return true;
     }
-    function refundAvailable(address beneficiary) constant public returns(uint256){
+    function refundAvailable(address beneficiary) view public returns(uint256){
         if(state != State.Finished) return 0;
         if(totalCollected() >= goal) return 0;
         return contributions[beneficiary];
