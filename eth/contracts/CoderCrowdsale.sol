@@ -1,17 +1,17 @@
 pragma solidity ^0.4.18;
 
-import './zeppelin/lifecycle/Destructible.sol';
 import './zeppelin/ownership/Ownable.sol';
 import './CoderCoin.sol';
 import './TokenTimelockMod.sol';
 
-contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
+contract CoderCrowdsale is Ownable, HasNoTokens {
     using SafeMath for uint256;
     
     uint8 private constant PERCENT_DIVIDER = 100;    
 
     //Hard-coded values
-    uint256 baseRate = 1000;     //1 ETH = 1000 CDR, both for PreSale and ICO rounds      
+    uint256 public baseRate = 1000;                 //1 ETH = 1000 CDR, both for PreSale and ICO rounds      
+    uint256 public goal = 500 ether;                //Minimal amount of collected Ether (if not reached - ETH may be refunded)
 
 
     uint256   public preSale_startTimestamp;        //when Presale started
@@ -24,7 +24,6 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
 
     uint256   public minContribution;               //Do not accept contributions lower than this value
     uint8     public foundersPercent;               //Percent of tokens that will be minted to founders (including timelocks)
-    uint256   public goal;                          //Minimal amount of collected Ether (if not reached - ETH may be refunded)
 
 
     struct Bonus {
@@ -71,7 +70,7 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
         uint256[] preSaleBonusThresholds, uint32[] preSaleBonusPercents, 
         uint256[] icoBonusThresholds, uint32[] icoBonusPercents, 
         uint256 _preSale_hardCap, uint256 _ICO_hardCap,
-        uint8 _foundersPercent, uint256 _minContribution, uint256 _goal
+        uint8 _foundersPercent, uint256 _minContribution
         ) public {
 
         require(_preSale_hardCap > 0);
@@ -91,7 +90,6 @@ contract CoderCrowdsale is Ownable, Destructible, HasNoTokens {
 
         foundersPercent = _foundersPercent;
         minContribution = _minContribution;
-        goal = _goal;
 
         token = new CoderCoin();                    //creating token in constructor
         manager = owner;
