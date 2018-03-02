@@ -42,14 +42,14 @@ jQuery(document).ready(function($) {
         let nowTimestamp = d.setMinutes(0, 0, 0);
 
         d = new Date(nowTimestamp+1*60*60*1000);
-        $('input[name="preSale_baseRate"]', form).val(1000);
+        //$('input[name="preSale_baseRate"]', form).val(1000);
         $('input[name="preSale_hardCap"]', form).val(10000);
-        $('input[name="ICO_baseRate"]', form).val(1000);
+        //$('input[name="ICO_baseRate"]', form).val(1000);
         $('input[name="ICO_hardCap"]', form).val(20000);
         $('input[name="ICO_bonusStartPercent"]', form).val(25);
         $('input[name="foundersPercent"]', form).val(100);
         $('input[name="minContribution"]', form).val(0.01);
-        $('input[name="goal"]', form).val(1000);
+        //$('input[name="goal"]', form).val(1000);
 
         function addBonus(prefix, threshold, percent){
             let tbody = $('#'+prefix+'BonusTable tbody');
@@ -115,14 +115,11 @@ jQuery(document).ready(function($) {
 
         let tokenAddress = $('input[name="tokenAddress"]', form).val();
 
-        let preSale_baseRate = $('input[name="preSale_baseRate"]', form).val();
         let preSale_hardCap = web3.toWei($('input[name="preSale_hardCap"]', form).val(), 'ether');
-        let ICO_baseRate = $('input[name="ICO_baseRate"]', form).val();
         let ICO_hardCap = web3.toWei($('input[name="ICO_hardCap"]', form).val(), 'ether');
         
         let foundersPercent  = $('input[name="foundersPercent"]', form).val();
         let minContribution  = web3.toWei($('input[name="minContribution"]', form).val(), 'ether');
-        let goal  = web3.toWei($('input[name="goal"]', form).val(), 'ether');
 
         function parseBonusTable(prefix){
             let table = $('#'+prefix+'BonusTable');
@@ -155,8 +152,8 @@ jQuery(document).ready(function($) {
             [
                 preSaleBonuses.thresholds, preSaleBonuses.percents,
                 icoBonuses.thresholds, icoBonuses.percents,
-                preSale_baseRate, preSale_hardCap, ICO_baseRate, ICO_hardCap, 
-                foundersPercent, minContribution, goal
+                preSale_hardCap, ICO_hardCap, 
+                foundersPercent, minContribution
             ],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
@@ -178,11 +175,9 @@ jQuery(document).ready(function($) {
     }
     $('input[name=preSale_baseRate]', '#publishContractsForm').change(function(){
         if(ethereumPrice == null) return;
-        setCDRPriceSpanText($('#publish_preSale_basePrice'), $(this).val());
     });
     $('input[name=ICO_baseRate]', '#publishContractsForm').change(function(){
         if(ethereumPrice == null) return;
-        setCDRPriceSpanText($('#publish_ICO_basePrice'), $(this).val());
     });
 
 
@@ -203,9 +198,9 @@ jQuery(document).ready(function($) {
                 $('input[name="preSale_startTimestamp"]', form).val('not defined');
             }
         });
-        crowdsaleInstance.preSale_baseRate(function(error, result){
+        crowdsaleInstance.baseRate(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
-            $('input[name="preSale_baseRate"]', form).val(result);
+            $('input[name="baseRate"]', form).val(result);
         });
         crowdsaleInstance.preSale_hardCap(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
@@ -223,10 +218,6 @@ jQuery(document).ready(function($) {
             }else{
                 $('input[name="ICO_startTimestamp"]', form).val('not defined');
             }
-        });
-        crowdsaleInstance.ICO_baseRate(function(error, result){
-            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
-            $('input[name="ICO_baseRate"]', form).val(result);
         });
         crowdsaleInstance.ICO_hardCap(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}

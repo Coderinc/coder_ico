@@ -57,10 +57,7 @@
     <h4 style="margin-top:5px;">Other options</h4>
     <table class="withBorders">
         <tr><td>Minimal contribution:</td><td><input type="number" name="minContribution" value="" class="number" step="0.01" min="0"></td><td>ETH</td></tr>
-        <tr><td>Goal:</td><td><input type="number" name="goal" value="" class="number" min="0"></td><td>ETH (if goal not reached, investors may claim refunds)</td></tr>
-        <tr><td>PreSale base rate:</td><td><input type="number" name="preSale_baseRate" value="" class="number"  min="0"></td><td>CDR = 1 ETH <span id="publish_preSale_basePrice"></span></td></tr>
         <tr><td>PreSale Hard Cap:</td><td><input type="number" name="preSale_hardCap" value="" class="number"  min="0"></td><td>ETH</td></tr>
-        <tr><td>ICO base rate:</td><td><input type="number" name="ICO_baseRate" value="" class="number" min="0"></td><td>CDR = 1 ETH <span id="publish_ICO_basePrice"></span></td></tr>
         <tr><td>ICO Hard Cap:</td><td><input type="number" name="ICO_hardCap" value="" class="number" min="0"></td><td>ETH (Does not include ETH collected on PreSale)</td></tr>
         <tr><td>Founders Tokens:</td><td><input type="number" name="foundersPercent" value="" class="number" min="0"></td><td>% (100% means half of all tokens will be minted to Founder and TokenTimelock contracts)</td></tr>
     </table>
@@ -92,14 +89,13 @@
     <table class="withBorders">
         <tr><td>Minimal contribution:</td><td><input readonly type="text" name="minContribution" value="" class="number"></td><td>ETH</td></tr>
         <tr><td>Goal:</td><td><input type="number" readonly name="goal" value="" class="number" min="0"></td><td>ETH</td></tr>
+        <tr><td>Base rate:</td><td><input readonly type="text" name="baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
 
         <tr><td>Presale Start:</td><td><input readonly type="text" name="preSale_startTimestamp" value="" class="number"></td><td></td></tr>
-        <tr><td>Presale base rate:</td><td><input readonly type="text" name="preSale_baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
         <tr><td>Presale Hard Cap:</td><td><input readonly type="text" name="preSale_hardCap" value="" class="number"></td><td>ETH</td></tr>
         <tr><td>Presale collected:</td><td><input readonly type="text" name="preSale_collected" value="" class="number"></td><td>ETH</td></tr>
 
         <tr><td>ICO Start:</td><td><input readonly type="text" name="ICO_startTimestamp" value="" class="number"></td><td></td></tr>
-        <tr><td>ICO base rate:</td><td><input readonly type="text" name="ICO_baseRate" value="" class="number"></td><td>CDR = 1 ETH</td></tr>
         <tr><td>ICO Hard Cap:</td><td><input readonly type="text" name="ICO_hardCap" value="" class="number"></td><td>ETH</td></tr>
         <tr><td>ICO collected:</td><td><input readonly type="text" name="preSale_collected" value="" class="number"></td><td>ETH</td></tr>
 
