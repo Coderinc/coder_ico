@@ -121,19 +121,37 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
         require(whitelist[msg.sender]);
         require(crowdsaleOpen());
 
-        uint256 buyerTokens = calculateTokenAmount(msg.value);
+        uint256 change = 0; 
+        uint256 amount = msg.value; 
+        uint256 collected;
 
         if (state == State.PreSale) {
-            preSale_collected = preSale_collected.add(msg.value);
-            require(preSale_collected <= preSale_hardCap);
+            collected = preSale_collected.add(msg.value);
+            if(collected > preSale_hardCap){
+                change = collected.sub(preSale_hardCap);
+                amount = amount.sub(change);
+            }
+            preSale_collected = preSale_collected.add(amount);
+            assert(preSale_collected <= preSale_hardCap);
         }else if (state == State.ICO) {
-            ICO_collected = ICO_collected.add(msg.value);
-            require(ICO_collected <= ICO_hardCap);
+            collected = ICO_collected.add(msg.value);
+            if(collected > ICO_hardCap){
+                change = collected.sub(ICO_hardCap);
+                amount = amount.sub(change);
+            }
+            ICO_collected = ICO_collected.add(amount);
+            assert(ICO_collected <= ICO_hardCap);
         }
 
-        contributions[msg.sender] = contributions[msg.sender].add(msg.value);
+        uint256 buyerTokens = calculateTokenAmount(amount);
+
+
+        contributions[msg.sender] = contributions[msg.sender].add(amount);
         token.mint(msg.sender, buyerTokens);
-        TokenPurchase(msg.sender, msg.value, buyerTokens);              //event for TokenPurchase
+        TokenPurchase(msg.sender, amount, buyerTokens);              //event for TokenPurchase
+        if(change > 0) {
+            msg.sender.transfer(change);    
+        }
     }
 
     /**
@@ -344,12 +362,12 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
     * @param newState New state of the crowdsale
     */
     function setState(State newState) public onlyOwner {
-        require(state != State.Finished); //if Finished, no state change possible
-        if(newState == State.Finished){
-            //token.finishMinting();
-            //token.transferOwnership(owner);
-            require(false);
-        }else if(newState == State.PreSale && preSale_startTimestamp == 0) {
+        require(state != State.Finished);                                           //if Finished, no state change possible
+        require(newState != State.Finished);                                        //To finish use finishCrowdsale()
+        require(!( newState == State.PreSale && ICO_startTimestamp != 0 ));         //Do not allow switch from ICO to PreSale
+        require(!( newState == State.ICO && totalCollected() < preSale_hardCap ));  //Do not allow switch to ICO if PreSale cap not raised    
+
+        if(newState == State.PreSale && preSale_startTimestamp == 0) {
             preSale_startTimestamp = now;
         }else if(newState == State.ICO && ICO_startTimestamp == 0) {
             ICO_startTimestamp = now;
