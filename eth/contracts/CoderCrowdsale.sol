@@ -145,7 +145,6 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
 
         uint256 buyerTokens = calculateTokenAmount(amount);
 
-
         contributions[msg.sender] = contributions[msg.sender].add(amount);
         token.mint(msg.sender, buyerTokens);
         TokenPurchase(msg.sender, amount, buyerTokens);              //event for TokenPurchase
@@ -335,7 +334,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
     * @param _manager Address of new manager
     */
     function setManager(address _manager) onlyOwner public {
-        require(manager != address(0));
+        require(_manager != address(0));
         manager = _manager;
     }
 
