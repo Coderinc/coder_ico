@@ -10,12 +10,14 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
     uint8 private constant PERCENT_DIVIDER = 100;    
 
     //Hard-coded values
-    uint256 public baseRate = 1000;                 //1 ETH = 1000 CDR, both for PreSale and ICO rounds      
-    uint256 public goal = 500 ether;                //Minimal amount of collected Ether (if not reached - ETH may be refunded)
-
+    uint256 public constant baseRate = 1000;                 //1 ETH = 1000 CDR, both for PreSale and ICO rounds      
+    uint256 public constant goal = 500 ether;                //Minimal amount of collected Ether (if not reached - ETH may be refunded)
+    uint8   public constant foundersPercent = 100;           //Percent of tokens that will be minted to founders (including timelocks). 100 means that Founders will receive same amount as minted during crowdsale. So they'll have 50% of a token totalSupply
+    uint256 public constant preSale_hardCap = 5000 ether;    //hard cap for Presale in wei
+    uint256 public constant preSale_maxDuration = 90 days;
+    uint256 public constant ICO_maxDuration     = 30 days;
 
     uint256   public preSale_startTimestamp;        //when Presale started
-    uint256   public preSale_hardCap;               //hard cap for Presale in wei
     uint256   public preSale_collected;             //how much wei already collected at pre-sale
 
     uint256   public ICO_startTimestamp;            //when ICO sale started uint256 public
@@ -23,7 +25,6 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
     uint256   public ICO_collected;                 //how much wei already collected at main sale
 
     uint256   public minContribution;               //Do not accept contributions lower than this value
-    uint8     public foundersPercent;               //Percent of tokens that will be minted to founders (including timelocks)
 
 
     struct Bonus {
@@ -69,26 +70,22 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
     function CoderCrowdsale (
         uint256[] preSaleBonusThresholds, uint32[] preSaleBonusPercents, 
         uint256[] icoBonusThresholds, uint32[] icoBonusPercents, 
-        uint256 _preSale_hardCap, uint256 _ICO_hardCap,
-        uint8 _foundersPercent, uint256 _minContribution
+        uint256 _ICO_hardCap,
+        uint256 _minContribution
         ) public {
 
-        require(_preSale_hardCap > 0);
         require(_ICO_hardCap > 0);
-        require(_minContribution < _preSale_hardCap);
         require(_minContribution < _ICO_hardCap);
         
         state = State.Paused;
 
-        preSale_hardCap = _preSale_hardCap;
         initBonusArray(preSaleBonuses, preSaleBonusThresholds, preSaleBonusPercents);
-        require(preSaleBonuses[preSaleBonuses.length - 1].threshold <= _preSale_hardCap);
+        require(preSaleBonuses[preSaleBonuses.length - 1].threshold <= preSale_hardCap);
 
         ICO_hardCap = _ICO_hardCap;
         initBonusArray(icoBonuses, icoBonusThresholds, icoBonusPercents);
-        require(icoBonuses[icoBonuses.length - 1].threshold <= _preSale_hardCap.add(_ICO_hardCap));
+        require(icoBonuses[icoBonuses.length - 1].threshold <= preSale_hardCap.add(_ICO_hardCap));
 
-        foundersPercent = _foundersPercent;
         minContribution = _minContribution;
 
         token = new CoderCoin();                    //creating token in constructor
@@ -159,7 +156,8 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
     function crowdsaleOpen() view public returns(bool){
         return  (state != State.Paused) &&
                 (state != State.Finished) &&
-                !hardCapReached(state);
+                !hardCapReached(state) &&
+                !maxDurationReached(state);
     }
 
     /**
@@ -324,6 +322,21 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
             return preSale_collected >= preSale_hardCap;
         }else if(_state == State.ICO){
             return ICO_collected >= ICO_hardCap;
+        }else {
+            return false;
+        }
+    }
+
+    /**
+    * @notice Check if max duration for the state is reached
+    * @param _state State to check
+    * @return If hard cap is reached
+    */
+    function maxDurationReached(State _state) view public returns(bool){
+        if(_state == State.PreSale) {
+            return (preSale_startTimestamp != 0) && (now > preSale_startTimestamp.add(preSale_maxDuration));
+        }else if(_state == State.ICO){
+            return (ICO_startTimestamp != 0) && (now > ICO_startTimestamp.add(ICO_maxDuration));
         }else {
             return false;
         }

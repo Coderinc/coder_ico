@@ -115,10 +115,10 @@ jQuery(document).ready(function($) {
 
         let tokenAddress = $('input[name="tokenAddress"]', form).val();
 
-        let preSale_hardCap = web3.toWei($('input[name="preSale_hardCap"]', form).val(), 'ether');
+        //let preSale_hardCap = web3.toWei($('input[name="preSale_hardCap"]', form).val(), 'ether');
         let ICO_hardCap = web3.toWei($('input[name="ICO_hardCap"]', form).val(), 'ether');
         
-        let foundersPercent  = $('input[name="foundersPercent"]', form).val();
+        //let foundersPercent  = $('input[name="foundersPercent"]', form).val();
         let minContribution  = web3.toWei($('input[name="minContribution"]', form).val(), 'ether');
 
         function parseBonusTable(prefix){
@@ -152,8 +152,8 @@ jQuery(document).ready(function($) {
             [
                 preSaleBonuses.thresholds, preSaleBonuses.percents,
                 icoBonuses.thresholds, icoBonuses.percents,
-                preSale_hardCap, ICO_hardCap, 
-                foundersPercent, minContribution
+                ICO_hardCap, 
+                minContribution
             ],
             function(tx){
                 $('input[name="publishedTx"]',form).val(tx);
