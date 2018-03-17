@@ -378,7 +378,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
         require(state != State.Finished);                                           //if Finished, no state change possible
         require(newState != State.Finished);                                        //To finish use finishCrowdsale()
         require(!( newState == State.PreSale && ICO_startTimestamp != 0 ));         //Do not allow switch from ICO to PreSale
-        require(!( newState == State.ICO && totalCollected() < preSale_hardCap ));  //Do not allow switch to ICO if PreSale cap not raised    
+        require(!( newState == State.ICO && totalCollected() < preSale_hardCap ));  //Do not allow switch to ICO if PreSale cap not raised (Note that because of maxDurationReached() we may never reach preSale_hardCap and be allowed to switch to ICO)   
 
         if(newState == State.PreSale && preSale_startTimestamp == 0) {
             preSale_startTimestamp = now;
