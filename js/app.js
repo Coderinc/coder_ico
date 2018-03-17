@@ -62,9 +62,9 @@ jQuery(document).ready(function($) {
         addBonus('preSale', 1000, 50);
         addBonus('preSale', 2000, 45);
         addBonus('preSale', 3000, 40);
-        addBonus('preSale', 10000, 35);
+        addBonus('preSale', 5000, 35);
         addBonus($('input[name="preSale_hardCap"]', form).val(), 30);
-        $('input[name="preSaleBonus_threshold\\['+($('#preSaleBonusTable tbody tr').length-1)+'\\]"]', form).prop('readonly', true);
+        //$('input[name="preSaleBonus_threshold\\['+($('#preSaleBonusTable tbody tr').length-1)+'\\]"]', form).prop('readonly', true);
         $('input[name="preSale_hardCap"]', form).change(function(){
             let tbody = $('#preSaleBonusTable tbody');
             let hardCap = $(this).val();
@@ -241,6 +241,10 @@ jQuery(document).ready(function($) {
             $('input[name="goal"]', form).val(web3.fromWei(result, 'ether'));
         });
 
+        crowdsaleInstance.crowdsaleOpen(function(error, result){
+            if(!!error) {console.log('Contract info loading error:\n', error);  return;}
+            $('input[name="crowdsaleOpen"]', form).val(result?'yes':'no');
+        });
         crowdsaleInstance.currentRate(function(error, result){
             if(!!error) {console.log('Contract info loading error:\n', error);  return;}
             $('input[name="currentRate"]', form).val(result);

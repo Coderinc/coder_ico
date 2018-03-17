@@ -28,11 +28,11 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
 
 
     struct Bonus {
-        uint256 threshold;                          //Maximum amount collected, to receiv this bonus (if collected more - look for next bonus)
+        uint256 threshold;                          //Maximum amount collected, to receiv this bonus (if collected more - look for next bonus). totalCollected() is used to determine currently collected amount
         uint32 percent;                             //Bonus percent, so that bonus = amount.mul(percent).div(PERCENT_DIVIDER)
     }
     Bonus[] public preSaleBonuses;                  //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap
-    Bonus[] public icoBonuses;                      //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap
+    Bonus[] public icoBonuses;                      //Array of Presale bonuses sorted from min threshold to max threshold. Last threshold SHOULD be equal to preSale_hardCap+ICO_hardCap
 
     enum State { Paused, PreSale, ICO, Finished }
     State public state;                             //current state of the contracts
@@ -80,16 +80,17 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
         state = State.Paused;
 
         initBonusArray(preSaleBonuses, preSaleBonusThresholds, preSaleBonusPercents);
-        require(preSaleBonuses[preSaleBonuses.length - 1].threshold <= preSale_hardCap);
+        require(preSaleBonuses[preSaleBonuses.length - 1].threshold <= preSale_hardCap);    //Make sure that final PreSale bonus can be reached
 
         ICO_hardCap = _ICO_hardCap;
         initBonusArray(icoBonuses, icoBonusThresholds, icoBonusPercents);
-        require(icoBonuses[icoBonuses.length - 1].threshold <= preSale_hardCap.add(_ICO_hardCap));
+        require(icoBonuses[icoBonuses.length - 1].threshold <= preSale_hardCap.add(_ICO_hardCap));  //Make sure that final ICO bonus can be reached
 
         minContribution = _minContribution;
 
         token = new CoderCoin();                    //creating token in constructor
         manager = owner;
+        
     }
 
     /**
