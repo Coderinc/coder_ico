@@ -80,11 +80,11 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
         state = State.Paused;
 
         initBonusArray(preSaleBonuses, preSaleBonusThresholds, preSaleBonusPercents);
-        require(preSaleBonuses[preSaleBonuses.length - 1].threshold <= preSale_hardCap);    //Make sure that final PreSale bonus can be reached
+        require(preSaleBonuses[preSaleBonuses.length - 1].threshold == preSale_hardCap);    //Make sure that final PreSale bonus can be reached
 
         ICO_hardCap = _ICO_hardCap;
         initBonusArray(icoBonuses, icoBonusThresholds, icoBonusPercents);
-        require(icoBonuses[icoBonuses.length - 1].threshold <= preSale_hardCap.add(_ICO_hardCap));  //Make sure that final ICO bonus can be reached
+        require(icoBonuses[icoBonuses.length - 1].threshold == preSale_hardCap.add(_ICO_hardCap));  //Make sure that final ICO bonus can be reached
 
         minContribution = _minContribution;
 
