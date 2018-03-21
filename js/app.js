@@ -116,14 +116,14 @@ jQuery(document).ready(function($) {
         let tokenAddress = $('input[name="tokenAddress"]', form).val();
 
         //let preSale_hardCap = web3.toWei($('input[name="preSale_hardCap"]', form).val(), 'ether');
-        let ICO_hardCap = web3.toWei($('input[name="ICO_hardCap"]', form).val(), 'ether');
-        
+        //let ICO_hardCap = web3.toWei($('input[name="ICO_hardCap"]', form).val(), 'ether');
+
         //let foundersPercent  = $('input[name="foundersPercent"]', form).val();
         let minContribution  = web3.toWei($('input[name="minContribution"]', form).val(), 'ether');
 
         function parseBonusTable(prefix){
             let table = $('#'+prefix+'BonusTable');
-            let count = $('tbody tr', preSaleBonusTable).length;
+            let count = $('tbody tr', table).length;
             let thresholds = new Array();
             let percents = new Array();
             let prev = 0;
@@ -147,6 +147,11 @@ jQuery(document).ready(function($) {
 
         let preSaleBonuses = parseBonusTable('preSale');
         let icoBonuses = parseBonusTable('ICO');
+
+        let lastPreSaleBonusThreshold = preSaleBonuses.thresholds[preSaleBonuses.thresholds.length-1];
+        let lastIcoBonusThreshold = icoBonuses.thresholds[icoBonuses.thresholds.length-1];
+        let ICO_hardCap = (new web3.BigNumber(lastPreSaleBonusThreshold)).sub(new web3.BigNumber(lastIcoBonusThreshold)).toString();
+
 
         publishContract(crowdsaleContract, 
             [
