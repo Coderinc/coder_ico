@@ -17,6 +17,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
     uint256 public constant preSale_maxDuration = 90 days;
     uint256 public constant ICO_maxDuration     = 30 days;
 
+
     uint256   public preSale_startTimestamp;        //when Presale started
     uint256   public preSale_collected;             //how much wei already collected at pre-sale
 
@@ -129,19 +130,23 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
                 change = collected.sub(preSale_hardCap);
                 amount = amount.sub(change);
             }
-            preSale_collected = preSale_collected.add(amount);
-            assert(preSale_collected <= preSale_hardCap);
         }else if (state == State.ICO) {
             collected = ICO_collected.add(msg.value);
             if(collected > ICO_hardCap){
                 change = collected.sub(ICO_hardCap);
                 amount = amount.sub(change);
             }
-            ICO_collected = ICO_collected.add(amount);
-            assert(ICO_collected <= ICO_hardCap);
         }
 
         uint256 buyerTokens = calculateTokenAmount(amount);
+
+        if (state == State.PreSale) {
+            preSale_collected = preSale_collected.add(amount);
+            assert(preSale_collected <= preSale_hardCap);
+        }else if (state == State.ICO) {
+            ICO_collected = ICO_collected.add(amount);
+            assert(ICO_collected <= ICO_hardCap);
+        }
 
         contributions[msg.sender] = contributions[msg.sender].add(amount);
         token.mint(msg.sender, buyerTokens);
