@@ -150,7 +150,7 @@ jQuery(document).ready(function($) {
 
         let lastPreSaleBonusThreshold = preSaleBonuses.thresholds[preSaleBonuses.thresholds.length-1];
         let lastIcoBonusThreshold = icoBonuses.thresholds[icoBonuses.thresholds.length-1];
-        let ICO_hardCap = (new web3.BigNumber(lastPreSaleBonusThreshold)).sub(new web3.BigNumber(lastIcoBonusThreshold)).toString();
+        let ICO_hardCap = web3.toBigNumber(lastIcoBonusThreshold).minus(web3.toBigNumber(lastPreSaleBonusThreshold)).toString(10);
 
 
         publishContract(crowdsaleContract, 
