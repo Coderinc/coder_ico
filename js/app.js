@@ -93,6 +93,7 @@ jQuery(document).ready(function($) {
             ethereumPrice = Number(result[0].price_usd);
             $('#ethereumPrice').html(ethereumPrice);
         });
+        $('.myLocalTimezone').html(new Date().toString().match(/\(([A-Za-z\s].*)\)/)[1])
     };
     function initManageForm(){
         let crowdsale = getUrlParam('crowdsale');
