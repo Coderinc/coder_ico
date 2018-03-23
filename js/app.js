@@ -58,11 +58,11 @@ jQuery(document).ready(function($) {
                 .append('<td><input type="number" name="'+prefix+'Bonus_threshold['+num+']" value="'+threshold+'" class="number" min="0"></td>')
                 .append('</td><td><input type="number" name="'+prefix+'Bonus_precent['+num+']" value="'+percent+'" class="number" min="0"></td>');
         }
-        addBonus('preSale', 500, 75);
-        addBonus('preSale', 1000, 50);
-        addBonus('preSale', 2000, 45);
-        addBonus('preSale', 3000, 40);
+        addBonus('preSale', 500, 50);
+        addBonus('preSale', 1500, 45);
+        addBonus('preSale', 2500, 40);
         addBonus('preSale', 5000, 35);
+        addBonus('preSale', 10000, 30);
         addBonus($('input[name="preSale_hardCap"]', form).val(), 30);
         //$('input[name="preSaleBonus_threshold\\['+($('#preSaleBonusTable tbody tr').length-1)+'\\]"]', form).prop('readonly', true);
         $('input[name="preSale_hardCap"]', form).change(function(){
@@ -71,12 +71,11 @@ jQuery(document).ready(function($) {
             let last = $('tr', tbody).length - 1;
             $('input[name="preSaleBonus_threshold\\['+last+'\\]"]', form).val(hardCap);
         });
-        addBonus('ICO', 5000, 30);
-        addBonus('ICO', 7000, 25);
-        addBonus('ICO', 10000, 20);
-        addBonus('ICO', 15000, 15);
-        addBonus('ICO', 20000, 10);
-        addBonus('ICO', 25000, 5);
+        addBonus('ICO', 20000, 25);
+        addBonus('ICO', 25000, 20);
+        addBonus('ICO', 30000, 15);
+        addBonus('ICO', 40000, 10);
+        addBonus('ICO', 50000, 5);
         $('#ICOBonusAddRow').click(function(){
             addBonus('ICO', '', '');
         })
