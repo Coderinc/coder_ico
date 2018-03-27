@@ -43,11 +43,11 @@ jQuery(document).ready(function($) {
 
         d = new Date(nowTimestamp+1*60*60*1000);
         //$('input[name="preSale_baseRate"]', form).val(1000);
-        $('input[name="preSale_hardCap"]', form).val(10000);
+        // $('input[name="preSale_hardCap"]', form).val(20000);       
         //$('input[name="ICO_baseRate"]', form).val(1000);
-        $('input[name="ICO_hardCap"]', form).val(20000);
-        $('input[name="ICO_bonusStartPercent"]', form).val(25);
-        $('input[name="foundersPercent"]', form).val(100);
+        // $('input[name="ICO_hardCap"]', form).val(20000);
+        // $('input[name="ICO_bonusStartPercent"]', form).val(25);
+        // $('input[name="foundersPercent"]', form).val(100);
         $('input[name="minContribution"]', form).val(0.01);
         //$('input[name="goal"]', form).val(1000);
 
@@ -63,8 +63,8 @@ jQuery(document).ready(function($) {
         addBonus('preSale', 2500, 40);
         addBonus('preSale', 5000, 35);
         addBonus('preSale', 10000, 30);
-        addBonus('preSale', 20000, 25);
-        addBonus($('input[name="preSale_hardCap"]', form).val(), 25);
+        addBonus('preSale', 20000, 25);    //this needs to match exactly presale hard cap in smart contract
+        // addBonus($('input[name="preSale_hardCap"]', form).val(), 25);
         //$('input[name="preSaleBonus_threshold\\['+($('#preSaleBonusTable tbody tr').length-1)+'\\]"]', form).prop('readonly', true);
         $('input[name="preSale_hardCap"]', form).change(function(){
             let tbody = $('#preSaleBonusTable tbody');

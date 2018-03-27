@@ -13,7 +13,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
     uint256 public constant baseRate = 1000;                 //1 ETH = 1000 CDR, both for PreSale and ICO rounds      
     uint256 public constant goal = 500 ether;                //Minimal amount of collected Ether (if not reached - ETH may be refunded)
     uint8   public constant foundersPercent = 100;           //Percent of tokens that will be minted to founders (including timelocks). 100 means that Founders will receive same amount as minted during crowdsale. So they'll have 50% of a token totalSupply
-    uint256 public constant preSale_hardCap = 10000 ether;   //hard cap for Presale in wei
+    uint256 public constant preSale_hardCap = 20000 ether;   //hard cap for Presale in wei
     uint256 public constant preSale_maxDuration = 90 days;
     uint256 public constant ICO_maxDuration     = 30 days;
 
