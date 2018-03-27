@@ -63,7 +63,8 @@ jQuery(document).ready(function($) {
         addBonus('preSale', 2500, 40);
         addBonus('preSale', 5000, 35);
         addBonus('preSale', 10000, 30);
-        addBonus($('input[name="preSale_hardCap"]', form).val(), 30);
+        addBonus('preSale', 20000, 25);
+        addBonus($('input[name="preSale_hardCap"]', form).val(), 25);
         //$('input[name="preSaleBonus_threshold\\['+($('#preSaleBonusTable tbody tr').length-1)+'\\]"]', form).prop('readonly', true);
         $('input[name="preSale_hardCap"]', form).change(function(){
             let tbody = $('#preSaleBonusTable tbody');
@@ -71,7 +72,6 @@ jQuery(document).ready(function($) {
             let last = $('tr', tbody).length - 1;
             $('input[name="preSaleBonus_threshold\\['+last+'\\]"]', form).val(hardCap);
         });
-        addBonus('ICO', 20000, 25);
         addBonus('ICO', 25000, 20);
         addBonus('ICO', 30000, 15);
         addBonus('ICO', 40000, 10);
