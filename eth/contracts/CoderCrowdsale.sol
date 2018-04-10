@@ -454,7 +454,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
         return true;
     }
     function refundAvailable(address beneficiary) view public returns(uint256){
-        if(state != State.Finished) return 0;
+        if(state != State.Finished && !maxDurationReached(State.ICO)) return 0;
         if(totalCollected() >= goal) return 0;
         return contributions[beneficiary];
     }
