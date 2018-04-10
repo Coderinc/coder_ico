@@ -444,7 +444,7 @@ contract CoderCrowdsale is Ownable, HasNoTokens {
         return refundTo(msg.sender);
     }
     function refundTo(address beneficiary) public returns(bool) {
-        require(state == State.Finished);
+        require(state == State.Finished || maxDurationReached(State.ICO));
         require(contributions[beneficiary] > 0);
         require(totalCollected() < goal);
 
