@@ -10,6 +10,7 @@ jQuery(document).ready(function($) {
     let web3 = null;
     let tokenContract = null;
     let crowdsaleContract = null;
+    let timelockContract = null;
 
     let ethereumPrice = null;
 
@@ -33,6 +34,10 @@ jQuery(document).ready(function($) {
             crowdsaleContract = data;
             $('#crowdsaleABI').text(JSON.stringify(data.abi));
             initManageForm();
+        });
+        loadContract('./eth/build/contracts/TokenTimelockMod.json', function(data){
+            timelockContract = data;
+            $('#timelockABI').text(JSON.stringify(data.abi));
         });
         initCrowdsaleForm();
     }
@@ -166,6 +171,7 @@ jQuery(document).ready(function($) {
             function(contract){
                 $('input[name="publishedAddress"]',form).val(contract.address);
                 $('input[name="crowdsaleAddress"]', '#manageCrowdsale').val(contract.address);
+                $('input[name="crowdsaleAddress"]', '#finishCrowdsale').val(crowdsale);
                 contract.token(function(error, result){
                     if(!!error) console.log('Can\'t get token address.\n', error);
                     $('input[name="tokenAddress"]',form).val(result);
@@ -308,8 +314,57 @@ jQuery(document).ready(function($) {
             }
         });        
 
+        crowdsaleInstance.token(function(error, tokenAddress){
+            if(!!error) console.error('Can not load token address!');
+            loadTokenTimelockInfo(crowdsaleInstance, tokenAddress);
+        });
 
     });
+    function loadTokenTimelockInfo(crowdsaleInstance, tokenAddress){
+        crowdsaleInstance.TokenTimelockCreated(
+            {},
+            {
+                'fromBlock': 0,
+                'toBlock':'latest'
+            }
+        ).get(function(error, logs){
+            if(!!error) {console.log('Contract TokenTimelockCreated logs loading error:\n', error);  return;}
+            let tbody = $('#locked_management tbody');
+            tbody.empty();
+            for(let i=0; i < logs.length; i++){
+                var log = logs[i];
+                //console.log(log.args);
+                let releaseDateTimestamp = log.args.releaseTimestamp.toNumber();
+                let markup = 
+                `<tr>
+                    <td><input type='text'   name='tokenTimeLock_${i}_address' value="`+log.args.TokenTimelock+`" readonly class="ethAddress"/></td>
+                    <td><input type='text'   name='tokenTimeLock_${i}_beneficiary' value="`+log.args.beneficiary+`" readonly class="ethAddress"/></td>
+                    <td><input type='number' name='tokenTimeLock_${i}_amount' value="`+web3.fromWei(log.args.amount)+`" readonly/></td>
+                    <td><input type='text'   name='tokenTimeLock_${i}_releaseTime' value="`+timestampToLocalString(releaseDateTimestamp)+`" readonly/></td>
+                    <td><input type='button' name='tokenTimeLock_${i}_releaseBtn' value="Release" data-address="`+log.args.TokenTimelock+`"/></td>
+                </tr>`;
+                tbody.append(markup);
+                //console.log(releaseDateTimestamp*1000, Date.now());
+                if(releaseDateTimestamp*1000 > Date.now()){
+                    $(`input[name=tokenTimeLock_${i}_releaseBtn]`, tbody).attr('disabled', true);
+                }else{
+                    $(`input[name=tokenTimeLock_${i}_releaseBtn]`, tbody).click(function(){
+                        let timelockAddress = $(this).data('address');
+                        let timelockInstance = web3.eth.contract(timelockContract.abi).at(timelockAddress);
+
+                        timelockInstance.release(tokenAddress, function(error, tx){
+                            if(!!error){ console.error('Failed to send release tx!'); return;}
+                            console.log('Release tx: ', tx);
+                        });
+
+                    });
+                }
+            }
+        });
+
+    }
+
+
     $('#setState').click(function(){
         if(crowdsaleContract == null) return;
         printError('');
@@ -541,7 +596,7 @@ jQuery(document).ready(function($) {
 
         console.log('Lockup arguments',reserveBeneficiaries, reserveLockupTimes, reservePercents);
 
-        crowdsaleInstance.finishCrowdsale(reserveBeneficiaries, reserveLockupTimes, reservePercents, function(error, result){
+        crowdsaleInstance.finishCrowdsale(reserveBeneficiaries, reserveLockupTimes, reservePercents, function(error, tx){
             if(!!error){
                 console.log('Can\'t execute finishCrowdsale:\n', error);
                 printError(error.message.substr(0,error.message.indexOf("\n")));
@@ -671,4 +726,8 @@ jQuery(document).ready(function($) {
         let d = new Date(timestamp * 1000);
         $field.val(d.toLocaleString('en-US'));
     }
+    function timestampToLocalString(timestamp){
+        return (new Date(timestamp*1000)).toLocaleString('en-US');
+    }
+
 });

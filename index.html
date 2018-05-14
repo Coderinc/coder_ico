@@ -22,11 +22,14 @@
 <div>Ethereum price: 1 ETH = <span id="ethereumPrice">...</span> USD</div>
 <h2>0. Load contracts</h2>
 <form id="loadContractsForm">
-    <label for="tokenABI">Token ABI:
+    <label>Token ABI:
         <textarea id="tokenABI" readonly class="abi"></textarea>
     </label>
-    <label for="crowdsaleABI">Crowdsale ABI:
+    <label>Crowdsale ABI:
         <textarea id="crowdsaleABI" readonly class="abi"></textarea>
+    </label>
+    <label>Token Timelock ABI:
+        <textarea id="timelockABI" readonly class="abi"></textarea>
     </label>
     <input type="button" id="loadContractsBtn" value="Load contracts">
 </form>
@@ -145,6 +148,18 @@
     </div>
     <input type="button" id="claimRefundTo" value="Claim Refund" />
 
+    <h4>Locked wallets management</h4>
+    <table id="locked_management">
+        <thead>
+            <th>Wallet</th>
+            <th>Beneficiary</th>
+            <th>Amount, CDR</th>
+            <th>Release date</th>
+            <th></th>
+        </thead>
+        <tbody></tbody>
+    </table>
+
 </form>
 
 <h3>3. Finish ICO</h3>
@@ -162,7 +177,6 @@
     <div><input type="button" id="add-row" value="Add Row"/></div>
     <div><input type="button" id="finishCrowdsaleBtn" value="Finish Crowdsale and send Founders tokens" /></div>
 </form>
-
 
 </body>
 </html>
