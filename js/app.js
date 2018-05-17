@@ -171,7 +171,7 @@ jQuery(document).ready(function($) {
             function(contract){
                 $('input[name="publishedAddress"]',form).val(contract.address);
                 $('input[name="crowdsaleAddress"]', '#manageCrowdsale').val(contract.address);
-                $('input[name="crowdsaleAddress"]', '#finishCrowdsale').val(crowdsale);
+                $('input[name="crowdsaleAddress"]', '#finishCrowdsale').val(contract.address);
                 contract.token(function(error, result){
                     if(!!error) console.log('Can\'t get token address.\n', error);
                     $('input[name="tokenAddress"]',form).val(result);
@@ -321,6 +321,7 @@ jQuery(document).ready(function($) {
 
     });
     function loadTokenTimelockInfo(crowdsaleInstance, tokenAddress){
+        let tokenInstance = web3.eth.contract(tokenContract.abi).at(tokenAddress);
         crowdsaleInstance.TokenTimelockCreated(
             {},
             {
@@ -347,8 +348,11 @@ jQuery(document).ready(function($) {
                 //console.log(releaseDateTimestamp*1000, Date.now());
                 if(releaseDateTimestamp*1000 > Date.now()){
                     $(`input[name=tokenTimeLock_${i}_releaseBtn]`, tbody).attr('disabled', true);
+                    checkBalance(i, log.args.TokenTimelock, log.args.amount, tokenInstance, false);
                 }else{
+                    checkBalance(i, log.args.TokenTimelock, log.args.amount, tokenInstance, true);
                     $(`input[name=tokenTimeLock_${i}_releaseBtn]`, tbody).click(function(){
+                        console.log('Releasing tokens for timelock '+timelockAddress);
                         let timelockAddress = $(this).data('address');
                         let timelockInstance = web3.eth.contract(timelockContract.abi).at(timelockAddress);
 
@@ -361,7 +365,24 @@ jQuery(document).ready(function($) {
                 }
             }
         });
+        function checkBalance(row, timelockAddress, timelockBalance, tokenInstance, lockPassed){
+            tokenInstance.balanceOf(timelockAddress, function(error, balanceWei){
+                if(!!error){ console.error('Failed to load token balance of '+timelockAddress); return;}
+                let balance = web3.fromWei(balanceWei);
+                if(lockPassed && balance == 0){
+                    console.log('Timelock wallet '+timelockAddress+' is released.');
+                    $(`input[name=tokenTimeLock_${row}_releaseBtn]`, tbody).val('Already released').attr('disabled', true);
+                }else{
+                    if(balanceWei.comparedTo(timelockBalance) != 0){
+                        $(`input[name=tokenTimeLock_${row}_amount]`, tbody).css('background-color', '#ff9999');
+                        console.error('Amount of '+web3.fromWei(timelockBalance)+' token '+tokenAddress+' locked on '+timelockAddress+' not equal to current balance '+web3.fromWei(balanceWei));
+                    }else{
+                        console.log('Timelock wallet '+timelockAddress+' stores '+web3.fromWei(balanceWei)+' tokens '+tokenAddress);
+                    }
+                }
+            });
 
+        }
     }
 
 
