@@ -348,12 +348,12 @@ jQuery(document).ready(function($) {
                 //console.log(releaseDateTimestamp*1000, Date.now());
                 if(releaseDateTimestamp*1000 > Date.now()){
                     $(`input[name=tokenTimeLock_${i}_releaseBtn]`, tbody).attr('disabled', true);
-                    checkBalance(i, log.args.TokenTimelock, log.args.amount, tokenInstance, false);
+                    checkBalance(tbody, i, log.args.TokenTimelock, log.args.amount, tokenInstance, false);
                 }else{
-                    checkBalance(i, log.args.TokenTimelock, log.args.amount, tokenInstance, true);
+                    checkBalance(tbody, i, log.args.TokenTimelock, log.args.amount, tokenInstance, true);
                     $(`input[name=tokenTimeLock_${i}_releaseBtn]`, tbody).click(function(){
-                        console.log('Releasing tokens for timelock '+timelockAddress);
                         let timelockAddress = $(this).data('address');
+                        console.log('Releasing tokens for timelock '+timelockAddress);
                         let timelockInstance = web3.eth.contract(timelockContract.abi).at(timelockAddress);
 
                         timelockInstance.release(tokenAddress, function(error, tx){
@@ -365,7 +365,7 @@ jQuery(document).ready(function($) {
                 }
             }
         });
-        function checkBalance(row, timelockAddress, timelockBalance, tokenInstance, lockPassed){
+        function checkBalance(tbody, row, timelockAddress, timelockBalance, tokenInstance, lockPassed){
             tokenInstance.balanceOf(timelockAddress, function(error, balanceWei){
                 if(!!error){ console.error('Failed to load token balance of '+timelockAddress); return;}
                 let balance = web3.fromWei(balanceWei);
